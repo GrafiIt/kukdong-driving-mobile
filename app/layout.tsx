@@ -10,8 +10,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: '휴먼로지텍 운전자 대시보드',
+  description: '운전자 운행 관리 및 일일점검 시스템',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -46,8 +46,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans antialiased">
+    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
+      <body className="font-sans antialiased bg-background">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
