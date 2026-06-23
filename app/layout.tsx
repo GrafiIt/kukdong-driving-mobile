@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import ServiceWorkerRegister from '@/components/service-worker-register'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -13,6 +14,12 @@ export const metadata: Metadata = {
   title: '휴먼과드라이빙',
   description: '운전자 운행 관리 및 일일점검 시스템',
   generator: 'v0.app',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '휴먼과드라이빙',
+  },
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
@@ -36,6 +43,7 @@ export default function RootLayout({
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased bg-background">
         {children}
+        <ServiceWorkerRegister />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
