@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Share, Plus, MoreVertical, Download } from 'lucide-react';
+import { Share, Plus } from 'lucide-react';
 
 // PWA beforeinstallprompt 이벤트 타입 확장
 interface BeforeInstallPromptEvent extends Event {
@@ -10,42 +10,72 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 type GuideTab = 'none' | 'android' | 'iphone';
+type AndroidStatus = 'idle' | 'prompted' | 'accepted' | 'dismissed' | 'loading' | 'unavailable';
 
-interface InstallGuideProps {
-  onBack: () => void;
-}
-
-export function InstallGuide({ onBack }: InstallGuideProps) {
+export function InstallGuide() {
   const [activeTab, setActiveTab] = useState<GuideTab>('none');
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [androidStatus, setAndroidStatus] = useState<'idle' | 'prompted' | 'accepted' | 'dismissed' | 'unavailable'>('idle');
-  const promptCaptured = useRef(false);
+  const [androidStatus, setAndroidStatus] = useState<AndroidStatus>('idle');
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      promptCaptured.current = true;
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  // 로딩 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  const startLoadingThenShowError = () => {
+    setAndroidStatus('loading');
+    setLoadingProgress(0);
+    const totalMs = 15000;
+    const intervalMs = 150;
+    const steps = totalMs / intervalMs;
+    let current = 0;
+
+    timerRef.current = setInterval(() => {
+      current += 1;
+      const progress = Math.min((current / steps) * 100, 100);
+      setLoadingProgress(progress);
+
+      if (current >= steps) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setAndroidStatus('unavailable');
+      }
+    }, intervalMs);
+  };
+
   const handleAndroidInstall = async () => {
     if (deferredPrompt) {
+      // deferredPrompt가 있으면 즉시 네이티브 팝업 실행 (브라우저 보안 정책상 딜레이 불가)
       setAndroidStatus('prompted');
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       setAndroidStatus(outcome === 'accepted' ? 'accepted' : 'dismissed');
       setDeferredPrompt(null);
     } else {
-      setAndroidStatus('unavailable');
+      // deferredPrompt 없으면 15초 로딩 후 경고 표시
+      startLoadingThenShowError();
     }
   };
 
   const handleTabToggle = (tab: GuideTab) => {
     setActiveTab((prev) => (prev === tab ? 'none' : tab));
-    if (tab === 'android') setAndroidStatus('idle');
+    if (tab === 'android') {
+      setAndroidStatus('idle');
+      setLoadingProgress(0);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
   };
 
   return (
@@ -63,6 +93,22 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
       {/* 스크롤 가능 본문 */}
       <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
 
+        {/* ── 공지 배너 ── */}
+        <div className="rounded-2xl bg-navy-50 border border-slate-200 bg-slate-50 px-4 py-4 space-y-2">
+          <div className="flex gap-2 items-start">
+            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center">!</span>
+            <p className="text-slate-700 text-sm leading-relaxed font-medium">
+              해당 설치 기능은 <strong className="text-slate-900">크롬(Chrome) 브라우저</strong>를 사용하셔야 합니다.
+            </p>
+          </div>
+          <div className="flex gap-2 items-start">
+            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center">!</span>
+            <p className="text-slate-700 text-sm leading-relaxed">
+              앱이 설치되어도 원하시는 바탕화면으로 빼지 않으시면, 바탕화면에 빼지 않은 다른 앱들과 같이 섞여 있습니다.
+            </p>
+          </div>
+        </div>
+
         {/* ── 안드로이드 카드 ── */}
         <div className="rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           {/* 카드 헤더 버튼 */}
@@ -71,7 +117,6 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
             className="w-full flex items-center gap-4 px-5 py-5 bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors"
             aria-expanded={activeTab === 'android'}
           >
-            {/* 안드로이드 아이콘 */}
             <div className="w-14 h-14 rounded-2xl bg-[#3ddc84]/10 flex items-center justify-center flex-shrink-0">
               <AndroidIcon />
             </div>
@@ -97,14 +142,43 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
 
               <button
                 onClick={handleAndroidInstall}
-                disabled={androidStatus === 'accepted'}
+                disabled={androidStatus === 'accepted' || androidStatus === 'loading'}
                 className="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-[#3ddc84] hover:bg-[#32c472] active:bg-[#28a85e] disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm font-bold text-slate-900 text-base"
               >
-                <Download size={20} />
+                <DownloadIcon />
                 {androidStatus === 'accepted' ? '설치 완료!' : '앱 설치하기'}
               </button>
 
-              {/* 상태 메시지 */}
+              {/* 15초 로딩 게이지 */}
+              {androidStatus === 'loading' && (
+                <div className="rounded-2xl bg-slate-100 border border-slate-200 p-5 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+                      <HourglassIcon progress={loadingProgress} />
+                    </div>
+                    <p className="text-slate-700 text-sm font-semibold">설치 환경을 분석 중입니다...</p>
+                  </div>
+
+                  {/* 프로그레스 바 */}
+                  <div className="space-y-1.5">
+                    <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-slate-600 to-slate-800 rounded-full transition-all duration-150 ease-linear"
+                        style={{ width: `${loadingProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-right text-xs text-slate-500 font-mono">
+                      {Math.floor(loadingProgress)}%
+                    </p>
+                  </div>
+
+                  <p className="text-slate-500 text-xs leading-relaxed text-center">
+                    잠시만 기다려 주세요. 브라우저 설치 가능 여부를 확인 중입니다.
+                  </p>
+                </div>
+              )}
+
+              {/* 설치 불가 경고 */}
               {androidStatus === 'unavailable' && (
                 <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 space-y-2">
                   <p className="font-semibold text-amber-800 text-sm">설치 창을 열 수 없습니다</p>
@@ -117,10 +191,16 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
                     <li>브라우저가 아직 설치 조건을 충족하지 못함</li>
                   </ul>
                   <p className="text-amber-700 text-sm leading-relaxed mt-1">
-                    Chrome 주소창 오른쪽의 <strong>"설치"</strong> 아이콘을 직접 눌러 설치해 주세요.
+                    Chrome 주소창 오른쪽의 <strong>&quot;설치&quot;</strong> 아이콘을 직접 눌러 설치해 주세요.
                   </p>
+                  <div className="mt-2 pt-2 border-t border-amber-200">
+                    <p className="text-amber-800 text-sm leading-relaxed">
+                      <strong>구글 보안 정책상 앱 설치 팝업은 1회만 제공됩니다.</strong> 이전에 설치를 취소하셨다면 크롬 주소창 우측 상단의 <strong>&apos;설치&apos;</strong> 아이콘을 직접 눌러주세요.
+                    </p>
+                  </div>
                 </div>
               )}
+
               {androidStatus === 'dismissed' && (
                 <p className="text-center text-slate-500 text-sm">
                   설치를 취소했습니다. 언제든 다시 시도할 수 있습니다.
@@ -137,13 +217,11 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
 
         {/* ── 아이폰 카드 ── */}
         <div className="rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-          {/* 카드 헤더 버튼 */}
           <button
             onClick={() => handleTabToggle('iphone')}
             className="w-full flex items-center gap-4 px-5 py-5 bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors"
             aria-expanded={activeTab === 'iphone'}
           >
-            {/* 애플 아이콘 */}
             <div className="w-14 h-14 rounded-2xl bg-slate-900/5 flex items-center justify-center flex-shrink-0">
               <AppleIcon />
             </div>
@@ -169,7 +247,6 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
                 </p>
               </div>
 
-              {/* Step 1 */}
               <IphoneStep
                 step={1}
                 title="Safari로 이 페이지 열기"
@@ -180,8 +257,6 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
                   </div>
                 }
               />
-
-              {/* Step 2 */}
               <IphoneStep
                 step={2}
                 title="하단 공유 버튼 탭"
@@ -192,8 +267,6 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
                   </div>
                 }
               />
-
-              {/* Step 3 */}
               <IphoneStep
                 step={3}
                 title="'홈 화면에 추가' 선택"
@@ -204,8 +277,6 @@ export function InstallGuide({ onBack }: InstallGuideProps) {
                   </div>
                 }
               />
-
-              {/* Step 4 */}
               <IphoneStep
                 step={4}
                 title="'추가' 버튼 탭"
@@ -237,15 +308,12 @@ interface IphoneStepProps {
 function IphoneStep({ step, title, description, icon, isLast = false }: IphoneStepProps) {
   return (
     <div className="flex gap-4">
-      {/* 세로 연결선 + 스텝 번호 */}
       <div className="flex flex-col items-center flex-shrink-0">
         <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-xs font-bold">
           {step}
         </div>
         {!isLast && <div className="w-0.5 flex-1 bg-slate-200 mt-1 min-h-4" />}
       </div>
-
-      {/* 내용 */}
       <div className={`flex gap-3 ${isLast ? '' : 'pb-4'}`}>
         <div className="flex-shrink-0 mt-0.5">{icon}</div>
         <div>
@@ -257,18 +325,34 @@ function IphoneStep({ step, title, description, icon, isLast = false }: IphoneSt
   );
 }
 
+/* ── 모래시계 애니메이션 아이콘 ── */
+function HourglassIcon({ progress }: { progress: number }) {
+  const rotation = (progress / 100) * 360;
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.15s linear' }}
+      aria-hidden="true"
+    >
+      <path
+        d="M5 2h14M5 22h14M7 2v5l5 5-5 5v5M17 2v5l-5 5 5 5v5"
+        stroke="#475569"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /* ── 인라인 SVG 아이콘들 ── */
 function AndroidIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-label="안드로이드">
-      <path
-        d="M17.523 15.341a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm-10.046 0a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zM4 12c0-4.418 3.582-8 8-8s8 3.582 8 8v4H4v-4z"
-        fill="none"
-      />
-      <path
-        d="M6 9.5C6 7.015 8.686 5 12 5s6 2.015 6 4.5V16H6V9.5z"
-        fill="#3ddc84"
-      />
+      <path d="M6 9.5C6 7.015 8.686 5 12 5s6 2.015 6 4.5V16H6V9.5z" fill="#3ddc84" />
       <circle cx="9.5" cy="9" r="0.75" fill="white" />
       <circle cx="14.5" cy="9" r="0.75" fill="white" />
       <line x1="9" y1="4" x2="7.5" y2="2.5" stroke="#3ddc84" strokeWidth="1.5" strokeLinecap="round" />
@@ -318,6 +402,15 @@ function CheckIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3v13M7 11l5 5 5-5" stroke="#1a2e1a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 20h14" stroke="#1a2e1a" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
