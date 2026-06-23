@@ -93,22 +93,6 @@ export function InstallGuide() {
       {/* 스크롤 가능 본문 */}
       <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
 
-        {/* ── 공지 배너 ── */}
-        <div className="rounded-2xl bg-navy-50 border border-slate-200 bg-slate-50 px-4 py-4 space-y-2">
-          <div className="flex gap-2 items-start">
-            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center">!</span>
-            <p className="text-slate-700 text-sm leading-relaxed font-medium">
-              해당 설치 기능은 <strong className="text-slate-900">크롬(Chrome) 브라우저</strong>를 사용하셔야 합니다.
-            </p>
-          </div>
-          <div className="flex gap-2 items-start">
-            <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center">!</span>
-            <p className="text-slate-700 text-sm leading-relaxed">
-              앱이 설치되어도 원하시는 바탕화면으로 빼지 않으시면, 바탕화면에 빼지 않은 다른 앱들과 같이 섞여 있습니다.
-            </p>
-          </div>
-        </div>
-
         {/* ── 안드로이드 카드 ── */}
         <div className="rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
           {/* 카드 헤더 버튼 */}
@@ -139,6 +123,22 @@ export function InstallGuide() {
               <p className="text-slate-600 text-sm leading-relaxed">
                 아래 버튼을 누르면 브라우저의 앱 설치 창이 나타납니다. 설치를 허용하면 홈 화면에 아이콘이 추가됩니다.
               </p>
+
+              {/* 안드로이드 전용 경고 문구 */}
+              <div className="rounded-2xl bg-white border border-slate-200 px-4 py-4 space-y-2">
+                <div className="flex gap-2 items-start">
+                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center">!</span>
+                  <p className="text-slate-700 text-sm leading-relaxed font-medium">
+                    해당 설치 기능은 <strong className="text-slate-900">크롬(Chrome) 브라우저</strong>를 사용하셔야 합니다.
+                  </p>
+                </div>
+                <div className="flex gap-2 items-start">
+                  <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center">!</span>
+                  <p className="text-slate-700 text-sm leading-relaxed">
+                    앱이 설치되어도 원하시는 바탕화면으로 빼지 않으시면, 바탕화면에 빼지 않은 다른 앱들과 같이 섞여 있습니다.
+                  </p>
+                </div>
+              </div>
 
               <button
                 onClick={handleAndroidInstall}
