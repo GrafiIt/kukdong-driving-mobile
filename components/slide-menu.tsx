@@ -2,14 +2,16 @@
 
 import { X, Smartphone } from 'lucide-react';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface SlideMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (screen: string) => void;
 }
 
-export function SlideMenu({ isOpen, onClose, onNavigate }: SlideMenuProps) {
+export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
+  const router = useRouter();
+
   // 메뉴 열릴 때 body 스크롤 잠금
   useEffect(() => {
     if (isOpen) {
@@ -23,8 +25,8 @@ export function SlideMenu({ isOpen, onClose, onNavigate }: SlideMenuProps) {
   }, [isOpen]);
 
   const handleInstallClick = () => {
-    onNavigate('install');
     onClose();
+    router.push('/install');
   };
 
   return (
