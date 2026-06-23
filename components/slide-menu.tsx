@@ -1,0 +1,82 @@
+'use client';
+
+import { X, Smartphone } from 'lucide-react';
+import { useEffect } from 'react';
+
+interface SlideMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onNavigate: (screen: string) => void;
+}
+
+export function SlideMenu({ isOpen, onClose, onNavigate }: SlideMenuProps) {
+  // 메뉴 열릴 때 body 스크롤 잠금
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  const handleInstallClick = () => {
+    onNavigate('install');
+    onClose();
+  };
+
+  return (
+    <>
+      {/* 오버레이 배경 */}
+      <div
+        className={`absolute inset-0 z-20 bg-black/50 transition-opacity duration-300 rounded-3xl ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* 슬라이드 메뉴 패널 */}
+      <div
+        className={`absolute top-0 right-0 z-30 h-full w-72 bg-slate-800 rounded-r-3xl shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="사이드 메뉴"
+      >
+        {/* 메뉴 헤더 */}
+        <div className="flex items-center justify-between px-5 pt-8 pb-5 border-b border-slate-700">
+          <span className="text-white font-bold text-lg tracking-tight">메뉴</span>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center rounded-2xl text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            aria-label="메뉴 닫기"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* 메뉴 항목 목록 */}
+        <nav className="flex-1 px-3 pt-4">
+          <button
+            onClick={handleInstallClick}
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-100 hover:bg-slate-700 active:bg-slate-600 transition-colors text-left"
+          >
+            <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Smartphone size={20} className="text-slate-200" />
+            </div>
+            <span className="font-semibold text-base">1. 휴대폰 설치</span>
+          </button>
+        </nav>
+
+        {/* 메뉴 하단 버전 표시 */}
+        <div className="px-5 pb-8 pt-4 border-t border-slate-700">
+          <p className="text-slate-500 text-xs text-center">v1.0.0</p>
+        </div>
+      </div>
+    </>
+  );
+}
