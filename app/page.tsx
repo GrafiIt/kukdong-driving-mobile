@@ -38,8 +38,8 @@ export default function Dashboard() {
         </div>
 
         {/* 메인 메뉴 그리드 */}
-        <div className="flex-1 px-6 py-4">
-          <div className="grid grid-cols-2 gap-4 h-full">
+        <div className="px-6 py-4">
+          <div className="grid grid-cols-2 gap-4">
             {menuItems.map((item, index) => (
               <button
                 key={index}
@@ -53,7 +53,7 @@ export default function Dashboard() {
         </div>
 
         {/* 하단 로고 구역 */}
-        <div className="px-6 py-8 flex justify-center bg-white">
+        <div className="px-6 mt-8 mb-8 flex justify-center bg-white">
           <div className="relative w-40 h-20">
             <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/CI-xGa6dl9UPtCj0HlksYN7m8CxfoLiFy.png"
