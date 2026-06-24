@@ -10,9 +10,7 @@ export default function InstallPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      {/* 모바일 컨테이너 */}
-      <div className="relative w-full max-w-md min-h-screen bg-white rounded-3xl shadow-lg border-4 border-gray-200 flex flex-col overflow-hidden">
+    <div className="w-full min-h-screen bg-white flex flex-col overflow-hidden">
 
         {/* ── 상단 내비게이션 바 ── */}
         <header className="flex items-center justify-between px-5 pt-6 pb-2 flex-shrink-0">
@@ -52,12 +50,11 @@ export default function InstallPage() {
           <InstallGuide />
         </main>
 
-        {/* ── 슬라이드 메뉴 ── */}
-        <SlideMenu
-          isOpen={isMenuOpen}
-          onClose={() => setIsMenuOpen(false)}
-        />
-      </div>
+      {/* ── 슬라이드 메뉴 ── */}
+      <SlideMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+      />
     </div>
   );
 }
