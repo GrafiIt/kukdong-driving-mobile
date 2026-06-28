@@ -167,3 +167,33 @@
     @apply font-sans;
   }
 }
+
+/* ── 관리자 점검 테이블: 가로 스크롤바 항상 노출 ── */
+.always-scrollbar {
+  overflow-x: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Webkit 기반 (Chrome, Safari, Edge) */
+.always-scrollbar::-webkit-scrollbar {
+  height: 10px;
+  display: block;
+}
+.always-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9; /* slate-100 */
+  border-radius: 9999px;
+}
+.always-scrollbar::-webkit-scrollbar-thumb {
+  background: #94a3b8; /* slate-400 */
+  border-radius: 9999px;
+  border: 2px solid #f1f5f9;
+}
+.always-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+
+/* Firefox */
+.always-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
