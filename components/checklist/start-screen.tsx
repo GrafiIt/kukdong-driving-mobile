@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bell, User, Car, Calendar, Truck, Layers, Fuel } from 'lucide-react'
+import { Home, Menu, User, Car, Calendar, Truck, Layers, Fuel } from 'lucide-react'
+import Link from 'next/link'
 import { CATEGORIES, CATEGORY_COUNT, CHECKLIST_ITEMS, type InspectionResult } from '@/lib/checklist-data'
 import { createClient } from '@/utils/supabase/client'
+import { SlideMenu } from '@/components/slide-menu'
 
 interface StartScreenProps {
   results: Record<string, InspectionResult>
@@ -41,6 +43,7 @@ function getCategoryBg(key: string) {
 
 export default function StartScreen({ results, onStart }: StartScreenProps) {
   const [isTodayCompleted, setIsTodayCompleted] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   // 오늘 점검 완료 여부 조회
   useEffect(() => {
@@ -89,15 +92,32 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
       {/* 상단 헤더 */}
-      <header className="flex items-center justify-between px-5 pt-6 pb-4 bg-white">
-        <h1 className="text-[17px] font-bold text-[#1e3a5f] leading-tight">
-          운전자 운행 전 일일체크리스트
-        </h1>
-        <button
-          aria-label="알림"
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+      <header className="flex items-center px-5 pt-6 pb-4 bg-white gap-4">
+        {/* 좌측: 홈 버튼 */}
+        <Link
+          href="/"
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+          aria-label="홈으로 이동"
         >
-          <Bell size={22} className="text-[#1e3a5f]" />
+          <Home size={22} className="text-[#1e3a5f]" />
+        </Link>
+
+        {/* 중앙: 제목 (flex-1로 중앙 정렬) */}
+        <div className="flex-1 flex justify-center">
+          <h1 className="text-[17px] font-bold text-[#1e3a5f] leading-tight">
+            운전자 운행 전 일일체크리스트
+          </h1>
+        </div>
+
+        {/* 우측: 메뉴 버튼 */}
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          aria-label="메뉴 열기"
+          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+          aria-haspopup="true"
+          aria-expanded={isMenuOpen}
+        >
+          <Menu size={22} className="text-[#1e3a5f]" />
         </button>
       </header>
 
@@ -191,6 +211,12 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
           {isTodayCompleted ? '오늘 점검 완료' : '점검 시작'}
         </button>
       </div>
+
+      {/* 슬라이드 메뉴 */}
+      <SlideMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+      />
     </div>
   )
 }
