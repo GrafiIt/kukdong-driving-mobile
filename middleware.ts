@@ -115,7 +115,8 @@ export const config = {
      * - _next/static (정적 파일)
      * - _next/image (이미지 최적화 파일)
      * - favicon.ico, 정적 이미지 (svg, png, jpg 등)
+     * - manifest.json, sw.js (PWA 관련 파일)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|debug|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|debug|manifest.json|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 }
