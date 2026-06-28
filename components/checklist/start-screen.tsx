@@ -10,6 +10,8 @@ import { SlideMenu } from '@/components/slide-menu'
 interface StartScreenProps {
   results: Record<string, InspectionResult>
   onStart: () => void
+  onEdit: (inspectionId: string) => void
+  isLoadingEdit: boolean
 }
 
 const DRIVER_NAME = '이윤상'
@@ -41,8 +43,9 @@ function getCategoryBg(key: string) {
   return 'bg-gray-50'
 }
 
-export default function StartScreen({ results, onStart }: StartScreenProps) {
+export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }: StartScreenProps) {
   const [isTodayCompleted, setIsTodayCompleted] = useState(false)
+  const [todayInspectionId, setTodayInspectionId] = useState<string | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   // 오늘 점검 완료 여부 조회
@@ -60,10 +63,12 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
           .select('id')
           .gte('inspected_at', todayStart.toISOString())
           .lte('inspected_at', todayEnd.toISOString())
+          .order('inspected_at', { ascending: false })
           .limit(1)
 
         if (!error && data && data.length > 0) {
           setIsTodayCompleted(true)
+          setTodayInspectionId(data[0].id)
         }
       } catch {
         // 조회 실패 시 기본값(미완료)으로 유지
@@ -72,6 +77,19 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
 
     checkTodayInspection()
   }, [])
+
+  // 점검 시작 / 수정 분기 핸들러
+  const handleMainButtonClick = () => {
+    if (isTodayCompleted) {
+      if (!todayInspectionId) return
+      const confirmed = window.confirm('오늘 점검을 마무리했는데 수정하시겠습니까?')
+      if (confirmed) {
+        onEdit(todayInspectionId)
+      }
+    } else {
+      onStart()
+    }
+  }
 
   const totalItems = CHECKLIST_ITEMS.length
 
@@ -200,15 +218,21 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
       {/* 하단 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
         <button
-          onClick={onStart}
-          disabled={isTodayCompleted}
+          onClick={handleMainButtonClick}
+          disabled={isLoadingEdit}
           className={`w-full h-14 text-white text-lg font-bold rounded-2xl shadow-md transition-colors
-            ${isTodayCompleted
+            ${isLoadingEdit
               ? 'bg-gray-400 cursor-not-allowed opacity-70'
+              : isTodayCompleted
+              ? 'bg-[#2e7d52] hover:bg-[#256544] active:bg-[#1d4f35]'
               : 'bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035]'
             }`}
         >
-          {isTodayCompleted ? '오늘 점검 완료' : '점검 시작'}
+          {isLoadingEdit
+            ? '불러오는 중...'
+            : isTodayCompleted
+            ? '오늘 점검 완료 (수정하기)'
+            : '점검 시작'}
         </button>
       </div>
 
