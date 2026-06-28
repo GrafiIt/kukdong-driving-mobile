@@ -1,16 +1,21 @@
 'use client';
 
-import { X, Smartphone } from 'lucide-react';
-import { useEffect } from 'react';
+import { X, Smartphone, Settings, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 interface SlideMenuProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// 통합 인증 사이트 로그인 페이지
+const LOGIN_URL = 'https://payment.1004.help/auth/login';
+
 export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // 메뉴 열릴 때 body 스크롤 잠금
   useEffect(() => {
@@ -24,9 +29,28 @@ export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
     };
   }, [isOpen]);
 
+  const handleAdminClick = () => {
+    onClose();
+    router.push('/admin');
+  };
+
   const handleInstallClick = () => {
     onClose();
     router.push('/install');
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[v0] 로그아웃 오류:', err);
+    } finally {
+      // 통합 인증 사이트 로그인 페이지로 이동
+      window.location.href = LOGIN_URL;
+    }
   };
 
   return (
@@ -62,7 +86,19 @@ export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
         </div>
 
         {/* 메뉴 항목 목록 */}
-        <nav className="flex-1 px-3 pt-4">
+        <nav className="flex-1 px-3 pt-4 flex flex-col gap-1">
+          {/* 1. 관리자 페이지 */}
+          <button
+            onClick={handleAdminClick}
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-100 hover:bg-slate-700 active:bg-slate-600 transition-colors text-left"
+          >
+            <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Settings size={20} className="text-slate-200" />
+            </div>
+            <span className="font-semibold text-base">1. 관리자 페이지</span>
+          </button>
+
+          {/* 2. 휴대폰 설치 */}
           <button
             onClick={handleInstallClick}
             className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-100 hover:bg-slate-700 active:bg-slate-600 transition-colors text-left"
@@ -70,7 +106,21 @@ export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
             <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center flex-shrink-0">
               <Smartphone size={20} className="text-slate-200" />
             </div>
-            <span className="font-semibold text-base">1. 휴대폰 설치</span>
+            <span className="font-semibold text-base">2. 휴대폰 설치</span>
+          </button>
+
+          {/* 3. 로그아웃 */}
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-100 hover:bg-slate-700 active:bg-slate-600 transition-colors text-left disabled:opacity-60"
+          >
+            <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <LogOut size={20} className="text-slate-200" />
+            </div>
+            <span className="font-semibold text-base">
+              {isLoggingOut ? '로그아웃 중...' : '3. 로그아웃'}
+            </span>
           </button>
         </nav>
 
