@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { SlideMenu } from '@/components/slide-menu';
 
 interface MenuItemProps {
@@ -12,6 +13,7 @@ interface MenuItemProps {
 export default function Dashboard() {
   const driverName = '이윤상';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   const menuItems: MenuItemProps[] = [
     { title: '일일점검\n체크리스트' },
@@ -21,7 +23,9 @@ export default function Dashboard() {
   ];
 
   const handleMenuClick = (title: string) => {
-    console.log(`${title} 클릭됨`);
+    if (title === '일일점검\n체크리스트') {
+      router.push('/checklist');
+    }
   };
 
   return (
