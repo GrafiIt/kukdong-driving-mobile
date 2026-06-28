@@ -12,6 +12,15 @@ const SUBSCRIPTION_URL = "https://payment.1004.help/dashboard/subscriptions"
 // ────────────────────────────────────────────────────────────
 
 export async function middleware(request: NextRequest) {
+  // ── 개발/프리뷰 환경 예외 처리 ────────────────────────────
+  // *.vercel.app 도메인(v0 테스트 도메인)은 쿠키 도메인이 달라
+  // 검증 로직을 거치면 무한 리다이렉트가 발생하므로 바로 통과시킨다.
+  const requestHostname = request.nextUrl.hostname
+  if (requestHostname.endsWith(".vercel.app")) {
+    return NextResponse.next()
+  }
+  // ─────────────────────────────────────────────────────────
+
   // 현재 접속 도메인 기반 쿠키 도메인 분기 (.1004.help 또는 localhost 등)
   const hostname = request.headers.get("host")?.split(":")[0] ?? null
   const cookieDomain = getCookieDomain(hostname)

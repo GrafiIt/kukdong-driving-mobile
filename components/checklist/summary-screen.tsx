@@ -9,7 +9,6 @@ interface SummaryScreenProps {
   onBack: () => void
   onSubmit: () => Promise<void>
   isSubmitting: boolean
-  isSubmitted: boolean
 }
 
 export default function SummaryScreen({
@@ -17,7 +16,6 @@ export default function SummaryScreen({
   onBack,
   onSubmit,
   isSubmitting,
-  isSubmitted,
 }: SummaryScreenProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
@@ -50,7 +48,7 @@ export default function SummaryScreen({
       <header className="flex items-center gap-3 px-4 pt-6 pb-4">
         <button
           onClick={onBack}
-          disabled={isSubmitting || isSubmitted}
+          disabled={isSubmitting}
           className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors disabled:opacity-40"
           aria-label="뒤로 가기"
         >
@@ -59,14 +57,6 @@ export default function SummaryScreen({
         <h1 className="text-lg font-bold text-[#1e3a5f] flex-1 text-center">이상 항목 기록</h1>
         <div className="w-9" />
       </header>
-
-      {/* 제출 완료 배너 */}
-      {isSubmitted && (
-        <div className="mx-4 mb-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-2">
-          <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
-          <span className="text-sm font-semibold text-green-700">점검 결과가 성공적으로 제출되었습니다.</span>
-        </div>
-      )}
 
       {/* 카테고리별 요약 */}
       <main className="flex-1 px-4 pb-32 flex flex-col gap-4">
@@ -197,27 +187,20 @@ export default function SummaryScreen({
 
       {/* 하단 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
-        {isSubmitted ? (
-          <div className="w-full h-14 bg-green-500 text-white text-lg font-bold rounded-2xl flex items-center justify-center gap-2">
-            <CheckCircle2 size={22} />
-            제출 완료
-          </div>
-        ) : (
-          <button
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className="w-full h-14 bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035] text-white text-lg font-bold rounded-2xl shadow-md transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                제출 중...
-              </>
-            ) : (
-              '점검 완료 제출'
-            )}
-          </button>
-        )}
+        <button
+          onClick={onSubmit}
+          disabled={isSubmitting}
+          className="w-full h-14 bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035] text-white text-lg font-bold rounded-2xl shadow-md transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 size={20} className="animate-spin" />
+              제출 중...
+            </>
+          ) : (
+            '점검 완료 제출'
+          )}
+        </button>
       </div>
     </div>
   )

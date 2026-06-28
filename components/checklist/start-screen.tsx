@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Bell, User, Car, Calendar, Truck, Layers, Fuel } from 'lucide-react'
 import { CATEGORIES, CATEGORY_COUNT, CHECKLIST_ITEMS, type InspectionResult } from '@/lib/checklist-data'
+import { createClient } from '@/utils/supabase/client'
 
 interface StartScreenProps {
   results: Record<string, InspectionResult>
@@ -38,13 +40,46 @@ function getCategoryBg(key: string) {
 }
 
 export default function StartScreen({ results, onStart }: StartScreenProps) {
+  const [isTodayCompleted, setIsTodayCompleted] = useState(false)
+
+  // 오늘 점검 완료 여부 조회
+  useEffect(() => {
+    const checkTodayInspection = async () => {
+      try {
+        const supabase = createClient()
+        const now = new Date()
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+
+        const { data, error } = await supabase
+          .schema('driver-checklist')
+          .from('bestdriver_inspections')
+          .select('id')
+          .gte('inspected_at', todayStart.toISOString())
+          .lte('inspected_at', todayEnd.toISOString())
+          .limit(1)
+
+        if (!error && data && data.length > 0) {
+          setIsTodayCompleted(true)
+        }
+      } catch {
+        // 조회 실패 시 기본값(미완료)으로 유지
+      }
+    }
+
+    checkTodayInspection()
+  }, [])
+
   const totalItems = CHECKLIST_ITEMS.length
-  const completedItems = Object.values(results).filter(
+
+  // 오늘 완료된 경우 모든 항목을 꽉 채운 수치로 표시
+  const displayCompleted = isTodayCompleted ? totalItems : Object.values(results).filter(
     (r) => r.status === 'normal' || r.status === 'abnormal'
   ).length
-  const progressPercent = Math.round((completedItems / totalItems) * 100)
+  const progressPercent = isTodayCompleted ? 100 : Math.round((displayCompleted / totalItems) * 100)
 
   const getCategoryCompleted = (categoryKey: string) => {
+    if (isTodayCompleted) return CATEGORY_COUNT[categoryKey as keyof typeof CATEGORY_COUNT]
     const categoryItems = CHECKLIST_ITEMS.filter((i) => i.categoryKey === categoryKey)
     return categoryItems.filter(
       (i) => results[i.id]?.status === 'normal' || results[i.id]?.status === 'abnormal'
@@ -101,7 +136,7 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-gray-700">전체 점검 진행률</span>
             <span className="text-sm text-gray-500">
-              <span className="font-bold text-[#1e3a5f]">{completedItems}</span>
+              <span className="font-bold text-[#1e3a5f]">{displayCompleted}</span>
               {' / '}{totalItems} 항목
             </span>
           </div>
@@ -146,9 +181,14 @@ export default function StartScreen({ results, onStart }: StartScreenProps) {
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
         <button
           onClick={onStart}
-          className="w-full h-14 bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035] text-white text-lg font-bold rounded-2xl shadow-md transition-colors"
+          disabled={isTodayCompleted}
+          className={`w-full h-14 text-white text-lg font-bold rounded-2xl shadow-md transition-colors
+            ${isTodayCompleted
+              ? 'bg-gray-400 cursor-not-allowed opacity-70'
+              : 'bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035]'
+            }`}
         >
-          점검 시작
+          {isTodayCompleted ? '오늘 점검 완료' : '점검 시작'}
         </button>
       </div>
     </div>

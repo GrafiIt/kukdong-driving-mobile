@@ -17,7 +17,6 @@ export default function ChecklistPage() {
   const [step, setStep] = useState<Step>('start')
   const [results, setResults] = useState<Record<string, InspectionResult>>(createInitialResults)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
 
   // ── 단일 항목 결과 업데이트 ──
   const handleUpdateResult = useCallback(
@@ -99,7 +98,10 @@ export default function ChecklistPage() {
         throw new Error(itemsError.message)
       }
 
-      setIsSubmitted(true)
+      alert('점검일지가 저장되었습니다.')
+      // 시작 화면으로 복귀 + 결과 초기화
+      setResults(createInitialResults())
+      setStep('start')
     } catch (err) {
       console.error('[v0] 제출 오류:', err)
       alert('제출 중 오류가 발생했습니다. 다시 시도해 주세요.')
@@ -135,7 +137,6 @@ export default function ChecklistPage() {
       onBack={() => setStep('inspection')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
-      isSubmitted={isSubmitted}
     />
   )
 }
