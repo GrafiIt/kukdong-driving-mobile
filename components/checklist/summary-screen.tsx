@@ -1,0 +1,224 @@
+'use client'
+
+import { ChevronLeft, CheckCircle2, MinusCircle, AlertCircle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { CATEGORIES, CHECKLIST_ITEMS, type CategoryKey, type InspectionResult } from '@/lib/checklist-data'
+
+interface SummaryScreenProps {
+  results: Record<string, InspectionResult>
+  onBack: () => void
+  onSubmit: () => Promise<void>
+  isSubmitting: boolean
+  isSubmitted: boolean
+}
+
+export default function SummaryScreen({
+  results,
+  onBack,
+  onSubmit,
+  isSubmitting,
+  isSubmitted,
+}: SummaryScreenProps) {
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+
+  const toggleExpand = (itemId: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
+
+  const getCategoryItems = (key: CategoryKey) =>
+    CHECKLIST_ITEMS.filter((i) => i.categoryKey === key)
+
+  const getCategoryStats = (key: CategoryKey) => {
+    const items = getCategoryItems(key)
+    const completed = items.filter(
+      (i) => results[i.id]?.status === 'normal' || results[i.id]?.status === 'abnormal'
+    ).length
+    const abnormal = items.filter((i) => results[i.id]?.status === 'abnormal').length
+    return { total: items.length, completed, abnormal }
+  }
+
+  const totalAbnormal = CHECKLIST_ITEMS.filter((i) => results[i.id]?.status === 'abnormal').length
+
+  return (
+    <div className="w-full min-h-screen bg-white flex flex-col">
+      {/* 헤더 */}
+      <header className="flex items-center gap-3 px-4 pt-6 pb-4">
+        <button
+          onClick={onBack}
+          disabled={isSubmitting || isSubmitted}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors disabled:opacity-40"
+          aria-label="뒤로 가기"
+        >
+          <ChevronLeft size={24} className="text-[#1e3a5f]" />
+        </button>
+        <h1 className="text-lg font-bold text-[#1e3a5f] flex-1 text-center">이상 항목 기록</h1>
+        <div className="w-9" />
+      </header>
+
+      {/* 제출 완료 배너 */}
+      {isSubmitted && (
+        <div className="mx-4 mb-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-2">
+          <CheckCircle2 size={18} className="text-green-600 flex-shrink-0" />
+          <span className="text-sm font-semibold text-green-700">점검 결과가 성공적으로 제출되었습니다.</span>
+        </div>
+      )}
+
+      {/* 카테고리별 요약 */}
+      <main className="flex-1 px-4 pb-32 flex flex-col gap-4">
+        {CATEGORIES.map((cat) => {
+          const stats = getCategoryStats(cat.key)
+          const isAllDone = stats.completed === stats.total
+          const items = getCategoryItems(cat.key)
+
+          return (
+            <section key={cat.key}>
+              {/* 카테고리 헤더 */}
+              <div className="flex items-center justify-between mb-2 px-1">
+                <h2 className="text-sm font-bold text-[#1e3a5f]">
+                  {cat.label}{' '}
+                  <span className="text-gray-400 font-normal">
+                    ({stats.completed}/{stats.total})
+                  </span>
+                </h2>
+                {isAllDone ? (
+                  <CheckCircle2 size={18} className="text-green-500" />
+                ) : (
+                  <MinusCircle size={18} className="text-red-400" />
+                )}
+              </div>
+
+              {/* 항목 목록 */}
+              <div className="flex flex-col gap-2">
+                {items.map((item) => {
+                  const result = results[item.id]
+                  const isAbnormal = result?.status === 'abnormal'
+                  const isExpanded = expandedItems.has(item.id)
+                  const hasDetail = isAbnormal && (result.note || (result.images && result.images.length > 0))
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`rounded-xl border overflow-hidden ${
+                        isAbnormal ? 'border-red-200 bg-red-50/30' : 'border-gray-100 bg-white'
+                      }`}
+                    >
+                      {/* 항목 행 */}
+                      <div
+                        className={`flex items-center gap-2.5 px-3 py-3 ${
+                          hasDetail ? 'cursor-pointer' : ''
+                        }`}
+                        onClick={() => hasDetail && toggleExpand(item.id)}
+                        role={hasDetail ? 'button' : undefined}
+                        tabIndex={hasDetail ? 0 : undefined}
+                        onKeyDown={(e) => hasDetail && e.key === 'Enter' && toggleExpand(item.id)}
+                      >
+                        {/* 순서 번호 */}
+                        <span
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${
+                            isAbnormal ? 'bg-red-500 text-white' : 'bg-[#1e3a5f] text-white'
+                          }`}
+                        >
+                          {item.order}
+                        </span>
+
+                        {/* 항목명 */}
+                        <span className="flex-1 text-xs text-gray-700 leading-snug">{item.label}</span>
+
+                        {/* 상태 표시 */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {isAbnormal ? (
+                            <>
+                              <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                                이상
+                              </span>
+                              {hasDetail && (
+                                isExpanded
+                                  ? <ChevronUp size={14} className="text-gray-400" />
+                                  : <ChevronDown size={14} className="text-gray-400" />
+                              )}
+                            </>
+                          ) : item.type === 'number' ? (
+                            <span className="text-xs font-bold text-[#1e3a5f]">
+                              {result?.numberValue ?? '-'} {item.unit}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                              정상
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 이상 상세 펼침 */}
+                      {isAbnormal && isExpanded && (
+                        <div className="px-3 pb-3 border-t border-red-100">
+                          {result.note && (
+                            <p className="text-xs text-red-700 mt-2 mb-2 leading-relaxed">
+                              <AlertCircle size={12} className="inline mr-1 mb-0.5" />
+                              {result.note}
+                            </p>
+                          )}
+                          {result.images && result.images.length > 0 && (
+                            <div className="flex gap-2">
+                              {result.images.map((img, idx) => (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  key={idx}
+                                  src={img.dataUrl}
+                                  alt={`이상 사진 ${idx + 1}`}
+                                  className="w-20 h-20 object-cover rounded-lg border border-red-200"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })}
+
+        {/* 이상 항목 없음 메시지 */}
+        {totalAbnormal === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 gap-2">
+            <CheckCircle2 size={40} className="text-green-400" />
+            <p className="text-sm font-semibold text-green-700">모든 항목 정상입니다</p>
+          </div>
+        )}
+      </main>
+
+      {/* 하단 고정 버튼 */}
+      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
+        {isSubmitted ? (
+          <div className="w-full h-14 bg-green-500 text-white text-lg font-bold rounded-2xl flex items-center justify-center gap-2">
+            <CheckCircle2 size={22} />
+            제출 완료
+          </div>
+        ) : (
+          <button
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="w-full h-14 bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035] text-white text-lg font-bold rounded-2xl shadow-md transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                제출 중...
+              </>
+            ) : (
+              '점검 완료 제출'
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
