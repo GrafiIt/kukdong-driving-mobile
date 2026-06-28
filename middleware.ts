@@ -67,12 +67,15 @@ export async function middleware(request: NextRequest) {
 
     const loginUrl = new URL(LOGIN_URL)
     loginUrl.searchParams.set("next", currentUrl)
+    console.log("[Middleware] 케이스 A: 미인증 - 로그인으로 이동", { cookieDomain, loginUrl: loginUrl.toString() })
     return NextResponse.redirect(loginUrl)
   }
 
+  console.log("[Middleware] 세션 확인됨 - user.id:", user.id)
+
   // ── 케이스 B: 인증됨, SaaS 권한 없음/만료 ────────────────
   // all_use_programs 스키마의 user_saas_permissions 테이블 단일 조회
-  const { data: permission } = await supabase
+  const { data: permission, error: permError } = await supabase
     .schema("all_use_programs")
     .from("user_saas_permissions")
     .select("is_active, expires_at")
@@ -85,12 +88,21 @@ export async function middleware(request: NextRequest) {
     : true
 
   if (!permission || permission.is_active !== true || isExpired) {
+    console.log("[Middleware] 케이스 B: 권한 없음/만료 - 구독 페이지로 이동", {
+      permission,
+      isExpired,
+      permError: permError?.message,
+    })
     // next 파라미터를 절대로 붙이지 않는다.
     // next 를 붙이면 payment 사이트가 다시 이쪽으로 튕겨내어 무한 루프가 발생한다.
     return NextResponse.redirect(SUBSCRIPTION_URL)
   }
 
   // ── 케이스 C: 인증됨, SaaS 권한도 있음 → 정상 통과 ───────
+  console.log("[Middleware] 케이스 C: 인증 + 권한 확인 - 정상 통과", {
+    is_active: permission.is_active,
+    expires_at: permission.expires_at,
+  })
   // 세션 쿠키 갱신 정보를 유지하기 위해 supabaseResponse 를 그대로 반환한다.
   return supabaseResponse
 }
@@ -104,6 +116,6 @@ export const config = {
      * - _next/image (이미지 최적화 파일)
      * - favicon.ico, 정적 이미지 (svg, png, jpg 등)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|debug|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 }
