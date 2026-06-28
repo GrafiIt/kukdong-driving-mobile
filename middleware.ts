@@ -37,7 +37,14 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
+            // Supabase가 넘기는 options 에는 domain 이 없으므로 강제 병합한다.
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              domain: cookieDomain,
+              path: "/",
+              sameSite: "lax",
+              secure: cookieDomain !== undefined,
+            }),
           )
         },
       },
@@ -47,13 +54,13 @@ export async function middleware(request: NextRequest) {
   // createServerClient 와 getUser() 사이에 다른 코드를 넣지 말 것.
   // 작은 실수로도 사용자가 무작위로 로그아웃되는 디버깅이 어려운 문제가 발생할 수 있다.
 
-  // ── 1단계: 로그인 세션 체크 ──────────────────────────────
+  // ── 케이스 A: 미인증 → 로그인 페이지로 리다이렉트 ────────
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    // 하드코딩 없이 현재 접속한 도메인/경로를 동적으로 감지하여 next 파라미터 구성
+    // 현재 접속한 도메인/경로를 동적으로 감지하여 next 파라미터 구성
     const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
     const host = request.headers.get("host") ?? request.nextUrl.host
     const currentUrl = `${proto}://${host}${request.nextUrl.pathname}${request.nextUrl.search}`
@@ -63,7 +70,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // ── 2단계: SaaS 권한 및 기간 체크 ────────────────────────
+  // ── 케이스 B: 인증됨, SaaS 권한 없음/만료 ────────────────
   // all_use_programs 스키마의 user_saas_permissions 테이블 단일 조회
   const { data: permission } = await supabase
     .schema("all_use_programs")
@@ -73,17 +80,17 @@ export async function middleware(request: NextRequest) {
     .eq("program_id", PROGRAM_ID)
     .single()
 
-  // ── 3단계: 권한 예외 처리 ────────────────────────────────
   const isExpired = permission?.expires_at
     ? new Date(permission.expires_at).getTime() < Date.now()
     : true
 
   if (!permission || permission.is_active !== true || isExpired) {
-    // 권한 없음/비활성/만료 → 구독 관리 페이지로 즉시 리다이렉트
-    return NextResponse.redirect(new URL(SUBSCRIPTION_URL))
+    // next 파라미터를 절대로 붙이지 않는다.
+    // next 를 붙이면 payment 사이트가 다시 이쪽으로 튕겨내어 무한 루프가 발생한다.
+    return NextResponse.redirect(SUBSCRIPTION_URL)
   }
 
-  // ── 4단계: 통과 ──────────────────────────────────────────
+  // ── 케이스 C: 인증됨, SaaS 권한도 있음 → 정상 통과 ───────
   // 세션 쿠키 갱신 정보를 유지하기 위해 supabaseResponse 를 그대로 반환한다.
   return supabaseResponse
 }

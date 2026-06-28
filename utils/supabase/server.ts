@@ -37,7 +37,14 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
+              // Supabase 가 넘기는 options 에는 domain 이 없으므로 강제 병합한다.
+              cookieStore.set(name, value, {
+                ...options,
+                domain: cookieDomain,
+                path: "/",
+                sameSite: "lax",
+                secure: cookieDomain !== undefined,
+              }),
             )
           } catch {
             // "setAll" 이 서버 컴포넌트에서 호출된 경우 무시 가능.
