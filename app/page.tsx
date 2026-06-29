@@ -226,6 +226,8 @@ export default function Dashboard() {
       <SlideMenu
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
+        isAuthenticated={isAuthenticated}
+        onRequireLogin={() => setShowLoginModal(true)}
       />
 
       {/* ── 로그인 안내 모달 ── */}
