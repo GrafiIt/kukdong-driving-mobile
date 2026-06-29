@@ -63,16 +63,24 @@ export async function middleware(request: NextRequest) {
   // createServerClient 와 getUser() 사이에 다른 코드를 넣지 말 것.
   // 작은 실수로도 사용자가 무작위로 로그아웃되는 디버깅이 어려운 문제가 발생할 수 있다.
 
-  // ── 케이스 A: 미인증 → 로그인 페이지로 리다이렉트 ────────
+  // ── 케이스 A: 미인증 처리 ─────────────────────────────────
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const pathname = request.nextUrl.pathname
+
   if (!user) {
-    // 현재 접속한 도메인/경로를 동적으로 감지하여 next 파라미터 구성
+    // 메인 페이지(/)는 미인증이더라도 통과 — 클라이언트에서 팝업으로 안내
+    if (pathname === "/") {
+      console.log("[Middleware] 케이스 A: 미인증이지만 메인 페이지는 통과 (팝업으로 안내)")
+      return supabaseResponse
+    }
+
+    // 내부 서비스/관리자 페이지는 기존처럼 미들웨어 단에서 강력 차단
     const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
     const host = request.headers.get("host") ?? request.nextUrl.host
-    const currentUrl = `${proto}://${host}${request.nextUrl.pathname}${request.nextUrl.search}`
+    const currentUrl = `${proto}://${host}${pathname}${request.nextUrl.search}`
 
     const loginUrl = new URL(LOGIN_URL)
     loginUrl.searchParams.set("next", currentUrl)
