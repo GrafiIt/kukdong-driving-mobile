@@ -2,10 +2,11 @@
 
 import { useState, useCallback } from 'react'
 import useSWR from 'swr'
-import { RefreshCw, ImageIcon, Search } from 'lucide-react'
+import { RefreshCw, ImageIcon, Search, Pencil } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { CHECKLIST_ITEMS } from '@/lib/checklist-data'
 import { PhotoModal } from '@/components/admin/photo-modal'
+import { AdminNoteModal } from '@/components/admin/admin-note-modal'
 
 // ─────────────────────────────────────────
 // 타입
@@ -22,6 +23,7 @@ interface InspectionRow {
   driver_name: string | null
   vehicle_number: string | null
   inspected_at: string
+  admin_note?: string | null
   bestdriver_inspection_items: InspectionItemRow[]
 }
 
@@ -57,7 +59,7 @@ async function fetchInspections(
     .schema('driver-checklist')
     .from('bestdriver_inspections')
     .select(
-      'id, driver_name, vehicle_number, inspected_at, bestdriver_inspection_items(item_id, status, note, image_urls)',
+      'id, driver_name, vehicle_number, inspected_at, admin_note, bestdriver_inspection_items(item_id, status, note, image_urls)',
     )
     .gte('inspected_at', fromDate)
     .lt('inspected_at', toDateExclusive)
@@ -94,6 +96,11 @@ interface ModalState {
   title: string
 }
 
+interface NoteModalState {
+  rowId: string
+  initialNote: string | null
+}
+
 // ─────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────
@@ -106,6 +113,7 @@ export function InspectionTable() {
   const [appliedTo, setAppliedTo]     = useState(defaults.to)
 
   const [modal, setModal] = useState<ModalState | null>(null)
+  const [noteModal, setNoteModal] = useState<NoteModalState | null>(null)
 
   // SWR key에 날짜를 포함시켜 날짜 변경 시 자동 refetch
   const swrKey = `admin-inspections/${appliedFrom}/${appliedTo}`
@@ -238,6 +246,13 @@ export function InspectionTable() {
                 >
                   탱크점검 ({TANK_ITEMS.length}항목)
                 </th>
+                {/* 관리자 그룹 */}
+                <th
+                  colSpan={1}
+                  className="border-l border-slate-200 px-2 py-2 text-center text-xs font-bold text-slate-600 bg-slate-100 whitespace-nowrap"
+                >
+                  관리자
+                </th>
               </tr>
 
               {/* 2행: 개별 항목 헤더 */}
@@ -261,6 +276,10 @@ export function InspectionTable() {
                     </th>
                   )
                 })}
+                {/* 비고 헤더 */}
+                <th className="border-l border-slate-200 bg-slate-50 px-3 py-2 text-center text-[11px] font-semibold text-slate-600 min-w-[160px]">
+                  비고
+                </th>
               </tr>
             </thead>
 
@@ -268,7 +287,7 @@ export function InspectionTable() {
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={4 + ORDERED_ITEMS.length} className="py-14 text-center text-slate-400">
+                  <td colSpan={4 + ORDERED_ITEMS.length + 1} className="py-14 text-center text-slate-400">
                     데이터를 불러오는 중입니다...
                   </td>
                 </tr>
@@ -276,7 +295,7 @@ export function InspectionTable() {
 
               {error && !isLoading && (
                 <tr>
-                  <td colSpan={4 + ORDERED_ITEMS.length} className="py-14 text-center text-red-500">
+                  <td colSpan={4 + ORDERED_ITEMS.length + 1} className="py-14 text-center text-red-500">
                     데이터 조회 중 오류: {error.message}
                   </td>
                 </tr>
@@ -284,7 +303,7 @@ export function InspectionTable() {
 
               {!isLoading && !error && data?.length === 0 && (
                 <tr>
-                  <td colSpan={4 + ORDERED_ITEMS.length} className="py-14 text-center text-slate-400">
+                  <td colSpan={4 + ORDERED_ITEMS.length + 1} className="py-14 text-center text-slate-400">
                     해당 기간의 점검 자료가 없습니다.
                   </td>
                 </tr>
@@ -390,6 +409,26 @@ export function InspectionTable() {
                         </td>
                       )
                     })}
+
+                    {/* 비고 셀 */}
+                    <td className="border-l border-slate-200 px-3 py-2.5 min-w-[160px]">
+                      <button
+                        onClick={() => setNoteModal({ rowId: row.id, initialNote: row.admin_note ?? null })}
+                        className="group/note flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-slate-100"
+                        title={row.admin_note ? '비고 수정' : '비고 입력'}
+                      >
+                        {row.admin_note ? (
+                          <>
+                            <span className="flex-1 truncate text-[12px] text-slate-700 leading-relaxed" title={row.admin_note}>
+                              {row.admin_note}
+                            </span>
+                            <Pencil size={12} className="shrink-0 text-slate-400 opacity-60 group-hover/note:opacity-100 transition-opacity" />
+                          </>
+                        ) : (
+                          <Pencil size={15} className="mx-auto text-slate-300 group-hover/note:text-slate-500 transition-colors" />
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -404,6 +443,16 @@ export function InspectionTable() {
           images={modal.images}
           title={modal.title}
           onClose={() => setModal(null)}
+        />
+      )}
+
+      {/* 관리자 비고 모달 */}
+      {noteModal && (
+        <AdminNoteModal
+          rowId={noteModal.rowId}
+          initialNote={noteModal.initialNote}
+          onClose={() => setNoteModal(null)}
+          onSaved={() => mutate()}
         />
       )}
     </div>
