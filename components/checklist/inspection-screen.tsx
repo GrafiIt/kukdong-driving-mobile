@@ -219,44 +219,93 @@ export default function InspectionScreen({
         <div className="w-9" />
       </header>
 
-      {/* 진행률 미니바 */}
-      <div className="px-4 pb-2">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-gray-500">{totalCompleted} / {totalItems} 항목 완료</span>
-          <span className="text-xs font-bold text-[#1e3a5f]">{progressPercent}%</span>
+      {/* 진행률 미니바 + 탭 (sticky 고정 영역) */}
+      <div className="sticky top-0 z-40 bg-white">
+        {/* 진행률 미니바 */}
+        <div className="px-4 pt-2 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-gray-500">{totalCompleted} / {totalItems} 항목 완료</span>
+            <span className="text-xs font-bold text-[#1e3a5f]">{progressPercent}%</span>
+          </div>
+          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#1e3a5f] rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
-        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#1e3a5f] rounded-full transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
 
-      {/* 탭 (차량 → 작업 → 탱크) */}
-      <div className="flex border-b border-gray-200 px-4">
-        {CATEGORIES.map((cat) => {
-          const completed = getTabCompleted(cat.key)
-          const total = CATEGORY_COUNT[cat.key]
-          const isActive = activeTab === cat.key
-          const isAllTabDone = completed === total
-          return (
-            <button
-              key={cat.key}
-              onClick={() => setActiveTab(cat.key)}
-              className={`flex-1 flex flex-col items-center py-2.5 border-b-2 transition-colors text-xs font-semibold gap-0.5 ${
-                isActive
-                  ? 'border-[#1e3a5f] text-[#1e3a5f]'
-                  : 'border-transparent text-gray-400'
-              }`}
-            >
-              <span>{cat.label}</span>
-              <span className={`text-[10px] font-normal ${isAllTabDone ? 'text-green-600' : 'text-gray-400'}`}>
-                {completed}/{total}
-              </span>
-            </button>
-          )
-        })}
+        {/* 탭 (차량 → 작업 → 탱크) */}
+        <div className="flex gap-2.5 px-4 py-3">
+          {CATEGORIES.map((cat) => {
+            const completed = getTabCompleted(cat.key)
+            const total = CATEGORY_COUNT[cat.key]
+            const isActive = activeTab === cat.key
+            const isAllTabDone = completed === total
+
+            // 탭별 컬러 테마
+            const theme = {
+              vehicle: {
+                activeBg: 'bg-blue-600',
+                activeText: 'text-white',
+                inactiveBg: 'bg-blue-50',
+                inactiveText: 'text-blue-700',
+                inactiveBorder: 'border-blue-300',
+                inactiveShadow: 'border-b-4 border-b-blue-300',
+                doneText: 'text-blue-200',
+                inactiveDoneText: 'text-blue-400',
+              },
+              work: {
+                activeBg: 'bg-emerald-600',
+                activeText: 'text-white',
+                inactiveBg: 'bg-emerald-50',
+                inactiveText: 'text-emerald-700',
+                inactiveBorder: 'border-emerald-300',
+                inactiveShadow: 'border-b-4 border-b-emerald-300',
+                doneText: 'text-emerald-200',
+                inactiveDoneText: 'text-emerald-500',
+              },
+              tank: {
+                activeBg: 'bg-orange-500',
+                activeText: 'text-white',
+                inactiveBg: 'bg-orange-50',
+                inactiveText: 'text-orange-700',
+                inactiveBorder: 'border-orange-300',
+                inactiveShadow: 'border-b-4 border-b-orange-300',
+                doneText: 'text-orange-200',
+                inactiveDoneText: 'text-orange-400',
+              },
+            } as const
+
+            const t = theme[cat.key]
+
+            return (
+              <button
+                key={cat.key}
+                onClick={() => setActiveTab(cat.key)}
+                className={`
+                  flex-1 flex flex-col items-center py-2.5 px-1 rounded-xl
+                  font-bold text-xs gap-0.5 select-none
+                  transition-all duration-150 ease-in-out
+                  border
+                  ${isActive
+                    ? `${t.activeBg} ${t.activeText} border-transparent shadow-sm translate-y-0.5`
+                    : `${t.inactiveBg} ${t.inactiveText} ${t.inactiveBorder} ${t.inactiveShadow} hover:brightness-95 active:translate-y-0.5 active:border-b`
+                  }
+                `}
+              >
+                <span>{cat.label}</span>
+                <span className={`text-[10px] font-semibold ${
+                  isActive
+                    ? (isAllTabDone ? t.doneText : 'text-white/70')
+                    : (isAllTabDone ? t.inactiveDoneText : 'text-gray-400')
+                }`}>
+                  {completed}/{total}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* 항목 리스트 */}
