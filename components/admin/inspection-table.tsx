@@ -179,26 +179,42 @@ export function InspectionTable() {
         )}
       </div>
 
-      {/* ── 테이블 래퍼: 항상 보이는 가로 스크롤바 ── */}
-      <div className="rounded-xl border border-slate-200 bg-white inspection-table-scroll">
-        <div className="overflow-x-scroll always-scrollbar">
+      {/* ── 테이블 래퍼: 세로 스크롤을 위해 높이 제한 + 가로 스크롤 ── */}
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+        <div className="overflow-auto always-scrollbar flex-1">
           <table className="w-max min-w-full border-collapse text-sm">
 
             {/* ─── 다중 헤더 (2-row) ─── */}
-            <thead>
+            <thead className="sticky top-0 z-20">
               {/* 1행: 카테고리 그룹 헤더 */}
               <tr className="bg-slate-100 border-b border-slate-200">
-                {/* 고정 컬럼 */}
-                <th rowSpan={2} className="sticky-col border-r border-slate-200 bg-slate-100 px-3 py-2 text-center text-xs font-bold text-slate-600 whitespace-nowrap min-w-[50px]">
+                {/* ── 좌측 4개 고정 컬럼 (z-30: 헤더 + sticky 교차점) ── */}
+                <th
+                  rowSpan={2}
+                  className="sticky left-0 z-30 border-r border-slate-200 bg-slate-100 px-3 py-2 text-center text-xs font-bold text-slate-600 whitespace-nowrap"
+                  style={{ width: 50, minWidth: 50 }}
+                >
                   No.
                 </th>
-                <th rowSpan={2} className="border-r border-slate-200 bg-slate-100 px-4 py-2 text-left text-xs font-bold text-slate-600 whitespace-nowrap min-w-[140px]">
+                <th
+                  rowSpan={2}
+                  className="sticky z-30 border-r border-slate-200 bg-slate-100 px-4 py-2 text-left text-xs font-bold text-slate-600 whitespace-nowrap"
+                  style={{ left: 50, width: 140, minWidth: 140 }}
+                >
                   점검일시
                 </th>
-                <th rowSpan={2} className="border-r border-slate-200 bg-slate-100 px-4 py-2 text-left text-xs font-bold text-slate-600 whitespace-nowrap min-w-[90px]">
+                <th
+                  rowSpan={2}
+                  className="sticky z-30 border-r border-slate-200 bg-slate-100 px-4 py-2 text-left text-xs font-bold text-slate-600 whitespace-nowrap"
+                  style={{ left: 190, width: 90, minWidth: 90 }}
+                >
                   작업자명
                 </th>
-                <th rowSpan={2} className="border-r border-slate-200 bg-slate-100 px-4 py-2 text-left text-xs font-bold text-slate-600 whitespace-nowrap min-w-[100px]">
+                <th
+                  rowSpan={2}
+                  className="sticky z-30 border-r-2 border-slate-300 bg-slate-100 px-4 py-2 text-left text-xs font-bold text-slate-600 whitespace-nowrap"
+                  style={{ left: 280, width: 100, minWidth: 100 }}
+                >
                   차량번호
                 </th>
                 {/* 차량점검 그룹 */}
@@ -229,7 +245,6 @@ export function InspectionTable() {
                 {ORDERED_ITEMS.map((item, idx) => {
                   const isVehicle = item.categoryKey === 'vehicle'
                   const isWork    = item.categoryKey === 'work'
-                  const isTank    = item.categoryKey === 'tank'
                   const bgClass   = isVehicle ? 'bg-blue-50/60' : isWork ? 'bg-emerald-50/60' : 'bg-orange-50/60'
                   const textClass = isVehicle ? 'text-blue-800' : isWork ? 'text-emerald-800' : 'text-orange-800'
                   const borderClass = idx === VEHICLE_ITEMS.length - 1 || idx === VEHICLE_ITEMS.length + WORK_ITEMS.length - 1
@@ -285,22 +300,34 @@ export function InspectionTable() {
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors"
+                    className="group border-b border-slate-100 hover:bg-slate-50 transition-colors"
                   >
-                    {/* No. */}
-                    <td className="sticky-col border-r border-slate-200 bg-white px-3 py-2.5 text-center text-xs text-slate-400">
+                    {/* No. — sticky left 0 */}
+                    <td
+                      className="sticky left-0 z-10 border-r border-slate-200 bg-white group-hover:bg-slate-50 transition-colors px-3 py-2.5 text-center text-xs text-slate-400"
+                      style={{ width: 50, minWidth: 50 }}
+                    >
                       {index + 1}
                     </td>
-                    {/* 점검일시 */}
-                    <td className="border-r border-slate-200 px-4 py-2.5 whitespace-nowrap text-sm font-medium text-slate-800">
+                    {/* 점검일시 — sticky left 50 */}
+                    <td
+                      className="sticky z-10 border-r border-slate-200 bg-white group-hover:bg-slate-50 transition-colors px-4 py-2.5 whitespace-nowrap text-sm font-medium text-slate-800"
+                      style={{ left: 50, width: 140, minWidth: 140 }}
+                    >
                       {formatDateTime(row.inspected_at)}
                     </td>
-                    {/* 작업자명 */}
-                    <td className="border-r border-slate-200 px-4 py-2.5 whitespace-nowrap text-sm text-slate-700">
+                    {/* 작업자명 — sticky left 190 */}
+                    <td
+                      className="sticky z-10 border-r border-slate-200 bg-white group-hover:bg-slate-50 transition-colors px-4 py-2.5 whitespace-nowrap text-sm text-slate-700"
+                      style={{ left: 190, width: 90, minWidth: 90 }}
+                    >
                       {row.driver_name ?? '-'}
                     </td>
-                    {/* 차량번호 */}
-                    <td className="border-r border-slate-200 px-4 py-2.5 whitespace-nowrap text-sm text-slate-700">
+                    {/* 차량번호 — sticky left 280 */}
+                    <td
+                      className="sticky z-10 border-r-2 border-slate-300 bg-white group-hover:bg-slate-50 transition-colors px-4 py-2.5 whitespace-nowrap text-sm text-slate-700"
+                      style={{ left: 280, width: 100, minWidth: 100 }}
+                    >
                       {row.vehicle_number ?? '-'}
                     </td>
 

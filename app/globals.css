@@ -168,9 +168,9 @@
   }
 }
 
-/* ── 관리자 점검 테이블: 가로 스크롤바 항상 노출 ── */
+/* ── 관리자 점검 테이블: 상하좌우 스크롤바 항상 노출 ── */
 .always-scrollbar {
-  overflow-x: scroll;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
 

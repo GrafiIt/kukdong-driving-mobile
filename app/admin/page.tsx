@@ -11,6 +11,7 @@ const ADMIN_LOGIN_URL =
 export default function AdminPage() {
   const [activeMenu, setActiveMenu] = useState<AdminMenuKey>('checklist')
   const [isChecking, setIsChecking] = useState(true)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // ── 클라이언트 측 2중 세션 체크 (URL 직접 접근 방어) ────
   useEffect(() => {
@@ -30,12 +31,17 @@ export default function AdminPage() {
   if (isChecking) return null
 
   return (
-    <div className="flex min-h-screen w-full bg-slate-100">
-      {/* 좌측 사이드바 (20%) */}
-      <AdminSidebar active={activeMenu} onSelect={setActiveMenu} />
+    <div className="flex h-screen w-full overflow-hidden bg-slate-100">
+      {/* 좌측 사이드바 */}
+      <AdminSidebar
+        active={activeMenu}
+        onSelect={setActiveMenu}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+      />
 
-      {/* 우측 메인 콘텐츠 (80%) */}
-      <main className="w-4/5 flex-1 overflow-y-auto p-8">
+      {/* 우측 메인 콘텐츠: 사이드바 접힘 여부에 관계없이 남은 공간 전체 차지 */}
+      <main className="flex-1 overflow-y-auto p-8 min-w-0">
         {activeMenu === 'checklist' && <InspectionTable />}
       </main>
     </div>

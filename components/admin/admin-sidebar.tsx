@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardCheck, type LucideIcon } from 'lucide-react'
+import { ClipboardCheck, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 
 export type AdminMenuKey = 'checklist'
 
@@ -18,20 +18,37 @@ const MENU_ITEMS: AdminMenuItem[] = [
 interface AdminSidebarProps {
   active: AdminMenuKey
   onSelect: (key: AdminMenuKey) => void
+  isCollapsed: boolean
+  onToggleCollapse: () => void
 }
 
-export function AdminSidebar({ active, onSelect }: AdminSidebarProps) {
+export function AdminSidebar({ active, onSelect, isCollapsed, onToggleCollapse }: AdminSidebarProps) {
   return (
-    <aside className="flex w-1/5 min-w-[220px] flex-col border-r border-slate-200 bg-slate-900">
-      {/* 로고 / 타이틀 */}
-      <div className="flex h-20 items-center border-b border-slate-800 px-6">
-        <span className="text-lg font-bold tracking-tight text-white">
-          관리자 페이지
-        </span>
+    <aside
+      className={`flex flex-col border-r border-slate-700 bg-slate-900 transition-all duration-300 ease-in-out flex-shrink-0 ${
+        isCollapsed ? 'w-16' : 'w-[220px]'
+      }`}
+    >
+      {/* 로고 / 타이틀 + 토글 버튼 */}
+      <div className="flex h-20 items-center border-b border-slate-800 px-3 justify-between overflow-hidden">
+        {!isCollapsed && (
+          <span className="text-base font-bold tracking-tight text-white whitespace-nowrap truncate">
+            관리자 페이지
+          </span>
+        )}
+        <button
+          onClick={onToggleCollapse}
+          className={`flex items-center justify-center rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white flex-shrink-0 ${
+            isCollapsed ? 'mx-auto' : 'ml-auto'
+          }`}
+          title={isCollapsed ? '사이드바 열기' : '사이드바 닫기'}
+        >
+          {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+        </button>
       </div>
 
       {/* 메뉴 목록 */}
-      <nav className="flex flex-1 flex-col gap-2 p-4">
+      <nav className="flex flex-1 flex-col gap-2 p-2">
         {MENU_ITEMS.map((item, index) => {
           const Icon = item.icon
           const isActive = active === item.key
@@ -39,24 +56,31 @@ export function AdminSidebar({ active, onSelect }: AdminSidebarProps) {
             <button
               key={item.key}
               onClick={() => onSelect(item.key)}
-              className={`flex items-center gap-3 rounded-xl px-4 py-4 text-left text-base font-semibold transition-colors ${
+              title={isCollapsed ? `${index + 1}. ${item.label}` : undefined}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors overflow-hidden ${
+                isCollapsed ? 'justify-center' : ''
+              } ${
                 isActive
                   ? 'bg-slate-700 text-white'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
               <Icon size={22} className="flex-shrink-0" />
-              <span>
-                {index + 1}. {item.label}
-              </span>
+              {!isCollapsed && (
+                <span className="truncate">
+                  {index + 1}. {item.label}
+                </span>
+              )}
             </button>
           )
         })}
       </nav>
 
-      <div className="border-t border-slate-800 p-4">
-        <p className="text-center text-xs text-slate-500">휴먼과드라이빙 관리자</p>
-      </div>
+      {!isCollapsed && (
+        <div className="border-t border-slate-800 p-4">
+          <p className="text-center text-xs text-slate-500">휴먼과드라이빙 관리자</p>
+        </div>
+      )}
     </aside>
   )
 }
