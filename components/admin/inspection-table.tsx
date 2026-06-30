@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import useSWR from 'swr'
-import { RefreshCw, ImageIcon, Search, Pencil } from 'lucide-react'
+import { RefreshCw, ImageIcon, Search, Pencil, Home } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { CHECKLIST_ITEMS } from '@/lib/checklist-data'
 import { PhotoModal } from '@/components/admin/photo-modal'
@@ -105,6 +106,7 @@ interface NoteModalState {
 // 메인 컴포넌트
 // ─────────────────────────────────────────
 export function InspectionTable() {
+  const router = useRouter()
   const defaults = getDefaultDateRange()
   const [fromDate, setFromDate] = useState(defaults.from)
   const [toDate, setToDate]     = useState(defaults.to)
@@ -142,14 +144,24 @@ export function InspectionTable() {
             기사님들이 제출한 운행 전 점검 자료입니다.
           </p>
         </div>
-        <button
-          onClick={() => mutate()}
-          disabled={isValidating}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-        >
-          <RefreshCw size={16} className={isValidating ? 'animate-spin' : ''} />
-          새로고침
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => mutate()}
+            disabled={isValidating}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isValidating ? 'animate-spin' : ''} />
+            새로고침
+          </button>
+          <button
+            onClick={() => router.push('/')}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            title="홈으로 가기"
+          >
+            <Home size={16} />
+            홈
+          </button>
+        </div>
       </div>
 
       {/* ── 기간 검색 필터 ── */}

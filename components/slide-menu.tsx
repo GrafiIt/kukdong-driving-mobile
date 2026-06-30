@@ -38,14 +38,14 @@ export function SlideMenu({ isOpen, onClose, isAuthenticated, onRequireLogin }: 
       onRequireLogin();
       return;
     }
-    // 인증 상태: 관리자 페이지로 이동
-    onClose();
+    // 인증 상태: 라우팅 먼저 → 메뉴 닫기 (타이밍 이슈 방지)
     router.push('/admin');
+    onClose();
   };
 
   const handleInstallClick = () => {
-    onClose();
     router.push('/install');
+    onClose();
   };
 
   const handleLogout = async () => {

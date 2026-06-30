@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { ChevronLeft, Camera, X, AlertCircle } from 'lucide-react'
 import {
   CATEGORIES,
@@ -17,6 +17,113 @@ interface InspectionScreenProps {
   onUpdateResult: (itemId: string, update: Partial<InspectionResult>) => void
   onFinish: () => void
   onBack: () => void
+}
+
+// ── iOS 스타일 휠 픽커 ─────────────────────────────────────────
+const SLEEP_OPTIONS: number[] = Array.from({ length: 17 }, (_, i) => 4 + i * 0.5) // 4 ~ 12, 0.5단위
+
+interface WheelPickerProps {
+  value: number
+  onChange: (v: number) => void
+}
+
+function WheelPicker({ value, onChange }: WheelPickerProps) {
+  const ITEM_H = 44          // px — 각 항목 높이
+  const VISIBLE = 5          // 보이는 행 수 (중앙 포함)
+  const containerH = ITEM_H * VISIBLE
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const isUserScroll = useRef(false)
+
+  // 초기 스크롤 위치 설정 (value 기준)
+  useEffect(() => {
+    const idx = SLEEP_OPTIONS.indexOf(value)
+    if (idx < 0 || !scrollRef.current) return
+    scrollRef.current.scrollTop = idx * ITEM_H
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 외부 value 변경 시 스크롤 동기화
+  useEffect(() => {
+    if (isUserScroll.current) return
+    const idx = SLEEP_OPTIONS.indexOf(value)
+    if (idx < 0 || !scrollRef.current) return
+    scrollRef.current.scrollTop = idx * ITEM_H
+  }, [value])
+
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    isUserScroll.current = true
+    const idx = Math.round(el.scrollTop / ITEM_H)
+    const clamped = Math.max(0, Math.min(SLEEP_OPTIONS.length - 1, idx))
+    if (SLEEP_OPTIONS[clamped] !== value) {
+      onChange(SLEEP_OPTIONS[clamped])
+    }
+    // 잠시 후 플래그 해제
+    clearTimeout((el as HTMLDivElement & { _swTimer?: ReturnType<typeof setTimeout> })._swTimer)
+    ;(el as HTMLDivElement & { _swTimer?: ReturnType<typeof setTimeout> })._swTimer =
+      setTimeout(() => { isUserScroll.current = false }, 200)
+  }
+
+  const padding = Math.floor(VISIBLE / 2) * ITEM_H // 위아래 패딩으로 중앙 정렬
+
+  return (
+    <div
+      className="relative flex-1 select-none overflow-hidden"
+      style={{ height: containerH }}
+    >
+      {/* 중앙 하이라이트 바 */}
+      <div
+        className="pointer-events-none absolute left-0 right-0 z-10 rounded-xl bg-gray-100 border border-gray-200"
+        style={{ top: Math.floor(VISIBLE / 2) * ITEM_H, height: ITEM_H }}
+      />
+
+      {/* 위쪽 그라데이션 페이드 */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-white to-transparent" />
+      {/* 아래쪽 그라데이션 페이드 */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-white to-transparent" />
+
+      {/* 스크롤 영역 */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="absolute inset-0 overflow-y-auto snap-y snap-mandatory scrollbar-hide"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {/* 상단 패딩 */}
+        <div style={{ height: padding }} />
+
+        {SLEEP_OPTIONS.map((opt) => {
+          const isSelected = opt === value
+          return (
+            <div
+              key={opt}
+              className="snap-center flex items-center justify-center transition-all duration-150"
+              style={{ height: ITEM_H }}
+            >
+              <span
+                className={`transition-all duration-150 ${
+                  isSelected
+                    ? 'text-2xl font-bold text-[#1e3a5f]'
+                    : 'text-base font-medium text-gray-400'
+                }`}
+              >
+                {Number.isInteger(opt) ? opt : opt.toFixed(1)}
+              </span>
+            </div>
+          )
+        })}
+
+        {/* 하단 패딩 */}
+        <div style={{ height: padding }} />
+      </div>
+    </div>
+  )
 }
 
 // ── 이상 입력 모달 ─────────────────────────────────────────────
@@ -365,25 +472,18 @@ export default function InspectionScreen({
                       </button>
                     </div>
                   ) : (
-                    // 숫자 입력 (수면 시간)
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        min="0"
-                        max="24"
-                        step="0.5"
-                        value={result?.numberValue ?? ''}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value)
+                    // 수면 시간 — iOS 스타일 휠 픽커
+                    <div className="flex items-center gap-3 px-1">
+                      <WheelPicker
+                        value={result?.numberValue ?? 4}
+                        onChange={(v) =>
                           onUpdateResult(item.id, {
-                            status: isNaN(val) ? 'pending' : 'normal',
-                            numberValue: isNaN(val) ? undefined : val,
+                            status: 'normal',
+                            numberValue: v,
                           })
-                        }}
-                        placeholder="0"
-                        className="flex-1 h-11 border border-gray-300 rounded-xl px-3 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40"
+                        }
                       />
-                      <span className="text-sm text-gray-500">{item.unit}</span>
+                      <span className="text-sm font-medium text-gray-500 flex-shrink-0">{item.unit}</span>
                     </div>
                   )}
                 </div>
