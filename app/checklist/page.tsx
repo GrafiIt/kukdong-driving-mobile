@@ -48,7 +48,7 @@ export default function ChecklistPage() {
       // 기존 마스터에 엮인 디테일 항목 전체 조회
       const { data: items, error: itemsError } = await supabase
         .schema('driver-checklist')
-        .from('bestdriver_inspection_items')
+        .from('kukdong_driver_inspection_items')
         .select('item_id, status, number_value, note, image_urls')
         .eq('inspection_id', inspectionId)
 
@@ -105,7 +105,7 @@ export default function ChecklistPage() {
 
         const { error: updateError } = await supabase
           .schema('driver-checklist')
-          .from('bestdriver_inspections')
+          .from('kukdong_driver_inspections')
           .update({
             driver_name: DRIVER_NAME,
             vehicle_number: VEHICLE_NUMBER,
@@ -120,7 +120,7 @@ export default function ChecklistPage() {
         // 기존 디테일 레코드 모두 삭제
         const { error: deleteError } = await supabase
           .schema('driver-checklist')
-          .from('bestdriver_inspection_items')
+          .from('kukdong_driver_inspection_items')
           .delete()
           .eq('inspection_id', inspectionId)
 
@@ -131,7 +131,7 @@ export default function ChecklistPage() {
         // [신규 모드] 마스터 레코드 INSERT
         const { data: inspection, error: inspectionError } = await supabase
           .schema('driver-checklist')
-          .from('bestdriver_inspections')
+          .from('kukdong_driver_inspections')
           .insert({
             driver_name: DRIVER_NAME,
             vehicle_number: VEHICLE_NUMBER,
@@ -168,7 +168,7 @@ export default function ChecklistPage() {
             const filePath = `${inspectionId}/${itemId}_${i + 1}.jpg`
 
             const { error: uploadError } = await supabase.storage
-              .from('bestdriver-inspection-images')
+              .from('kukdong-driver-inspection-images')
               .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
 
             // 업로드 실패 시: 로그 출력 후 즉시 중단 (텍스트 데이터 저장 방지)
@@ -178,7 +178,7 @@ export default function ChecklistPage() {
             }
 
             const { data: publicUrl } = supabase.storage
-              .from('bestdriver-inspection-images')
+              .from('kukdong-driver-inspection-images')
               .getPublicUrl(filePath)
             imageUrls.push(publicUrl.publicUrl)
           }
@@ -196,14 +196,14 @@ export default function ChecklistPage() {
 
       const { error: itemsError } = await supabase
         .schema('driver-checklist')
-        .from('bestdriver_inspection_items')
+        .from('kukdong_driver_inspection_items')
         .insert(itemRows)
 
       if (itemsError) {
         throw new Error(itemsError.message)
       }
 
-      alert(isEditing ? '점검일지가 수정되었습니다.' : '점검일지가 저장되었습니다.')
+      alert(isEditing ? '점검일지가 수정되었습니다.' : '점검일지가 저��되었습니다.')
       // 시작 화면으로 복귀 + 상태 초기화
       setResults(createInitialResults())
       setEditingId(null)

@@ -43,7 +43,7 @@ export function AdminNoteModal({
       const supabase = createClient()
       const { error } = await supabase
         .schema('driver-checklist')
-        .from('bestdriver_inspections')
+        .from('kukdong_driver_inspections')
         .update({ admin_note: note.trim() === '' ? null : note.trim() })
         .eq('id', rowId)
 
