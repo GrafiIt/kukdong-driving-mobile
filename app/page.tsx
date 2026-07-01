@@ -160,14 +160,29 @@ export default function Dashboard() {
 
       {/* ── 상단 내비게이션 바 ── */}
       <header className="flex items-center justify-between px-5 pt-6 pb-2 flex-shrink-0">
-        {/* 좌측 여백 */}
-        <div className="min-w-[100px]" />
+        {/* 좌측: CI 로고 및 텍스트 */}
+        <button
+          onClick={() => router.push('/')}
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-1"
+          aria-label="홈으로 이동"
+        >
+          <div className="relative w-14 h-14 flex-shrink-0">
+            <Image
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5_%E1%84%80%E1%85%B3%E1%86%A8%E1%84%83%E1%85%A9%E1%86%BC%E1%84%85%E1%85%A9%E1%84%8C%E1%85%B5%E1%84%90%E1%85%A6%E1%86%A8_CI_%E1%84%86%E1%85%A1%E1%86%AB-ZEImOG0hkYZ10GA1Ixc8NAXGROHQg7.png"
+              alt="극동로지텍"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span className="text-sm font-semibold text-slate-900">극동로지텍 운전자 시스템</span>
+        </button>
 
         {/* 중앙 여백 */}
         <div className="flex-1" />
 
         {/* 우측: 햄버거 메뉴 */}
-        <div className="min-w-[100px] flex justify-end">
+        <div className="flex justify-end">
           <button
             onClick={() => setIsMenuOpen(true)}
             className="w-11 h-11 flex items-center justify-center rounded-2xl text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
@@ -183,14 +198,7 @@ export default function Dashboard() {
       {/* ── 메인 콘텐츠 영역 ── */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="flex flex-col flex-1">
-          {/* 환영 메시지 */}
-          <div className="px-6 pt-4 pb-6">
-            <h1 className="text-2xl font-bold text-slate-900">
-              {`${driverName} 기사님`}
-              <br />
-              반갑습니다
-            </h1>
-          </div>
+
 
           {/* 메인 메뉴 그리드 */}
           <div className="px-6 py-4">
