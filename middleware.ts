@@ -13,8 +13,12 @@ const SUBSCRIPTION_URL = "https://payment.1004.help/dashboard/subscriptions"
 
 export async function middleware(request: NextRequest) {
   // ── 개발/프리뷰 환경 예외 처리 ────────────────────────────
-  // *.vercel.app 도메인(v0 테스트 도메인)은 쿠키 도메인이 달라
-  // 검증 로직을 거치면 무한 리다이렉트가 발생하므로 바로 통과시킨다.
+  // 1) Supabase 환경 변수가 없으면 인증 로직 실행 불가 → 바로 통과
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return NextResponse.next()
+  }
+  // 2) *.vercel.app 도메인(v0 테스트 도메인)은 쿠키 도메인이 달라
+  //    검증 로직을 거치면 무한 리다이렉트가 발생하므로 바로 통과시킨다.
   const requestHostname = request.nextUrl.hostname
   if (requestHostname.endsWith(".vercel.app")) {
     return NextResponse.next()
