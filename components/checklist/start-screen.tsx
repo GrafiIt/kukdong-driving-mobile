@@ -59,7 +59,7 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
 
         const { data, error } = await supabase
           .schema('driver-checklist')
-          .from('bestdriver_inspections')
+          .from('kukdong_driver_inspections')
           .select('id')
           .gte('inspected_at', todayStart.toISOString())
           .lte('inspected_at', todayEnd.toISOString())

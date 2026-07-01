@@ -25,7 +25,7 @@ interface InspectionRow {
   vehicle_number: string | null
   inspected_at: string
   admin_note?: string | null
-  bestdriver_inspection_items: InspectionItemRow[]
+  kukdong_driver_inspection_items: InspectionItemRow[]
 }
 
 // ─────────────────────────────────────────
@@ -58,9 +58,9 @@ async function fetchInspections(
 
   const { data, error } = await supabase
     .schema('driver-checklist')
-    .from('bestdriver_inspections')
+    .from('kukdong_driver_inspections')
     .select(
-      'id, driver_name, vehicle_number, inspected_at, admin_note, bestdriver_inspection_items(item_id, status, note, image_urls)',
+      'id, driver_name, vehicle_number, inspected_at, admin_note, kukdong_driver_inspection_items(item_id, status, note, image_urls)',
     )
     .gte('inspected_at', fromDate)
     .lt('inspected_at', toDateExclusive)
@@ -324,7 +324,7 @@ export function InspectionTable() {
               {!isLoading && !error && data?.map((row, index) => {
                 // item_id → InspectionItemRow 맵
                 const itemMap = new Map<string, InspectionItemRow>()
-                ;(row.bestdriver_inspection_items ?? []).forEach((it) => {
+                ;(row.kukdong_driver_inspection_items ?? []).forEach((it) => {
                   itemMap.set(it.item_id, it)
                 })
 
