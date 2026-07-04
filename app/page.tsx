@@ -9,7 +9,6 @@ import { createClient } from '@/utils/supabase/client';
 
 // ── 통합 인증 상수 ────────────────────────────────────────
 const LOGIN_BASE_URL = 'https://payment.1004.help/auth/login';
-const NEXT_URL = 'https://bestdriver.1004.help/';
 // ─────────────────────────────────────────────────────────
 
 interface MenuItemProps {
@@ -127,9 +126,12 @@ export default function Dashboard() {
   }, []);
 
   // ── 통합 로그인 URL 생성 ──────────────────────────────────
+  // 현재 접속 중인 전체 주소를 next 파라미터로 붙여 로그인 후 원래 페이지로 복귀
   const buildLoginUrl = useCallback(() => {
     const url = new URL(LOGIN_BASE_URL);
-    url.searchParams.set('next', NEXT_URL);
+    const currentUrl =
+      typeof window !== 'undefined' ? window.location.href : 'https://kukdong-dr.1004.help/';
+    url.searchParams.set('next', currentUrl);
     return url.toString();
   }, []);
 
