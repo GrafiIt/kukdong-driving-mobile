@@ -74,7 +74,15 @@ export async function middleware(request: NextRequest) {
   let verifyData: {
     authenticated?: boolean
     user?: unknown
-    permission?: { is_active?: boolean; expires_at?: string | null; user_level?: string }
+    permission?: {
+      // 스네이크 케이스 / 카멜케이스 / 문자열 "true" 모두 대비
+      is_active?: boolean | string
+      isActive?: boolean | string
+      expires_at?: string | null
+      expiresAt?: string | null
+      user_level?: string
+      userLevel?: string
+    }
     company?: { name?: string }
   } = {}
 
@@ -109,11 +117,21 @@ export async function middleware(request: NextRequest) {
 
   // ── 케이스 B: 인증됨, SaaS 권한 없음/만료 ────────────────
   const permission = verifyData.permission
-  const isExpired = permission?.expires_at
-    ? new Date(permission.expires_at).getTime() < Date.now()
-    : true
 
-  if (!permission || permission.is_active !== true || isExpired) {
+  // 스네이크 케이스·카멜케이스·문자열 "true" 모두 정상(true)으로 처리
+  const rawActive = permission?.is_active ?? permission?.isActive
+  const isActive = rawActive === true || rawActive === "true"
+
+  // 만료일이 없거나 null 이면 '만료되지 않음(false)'으로 안전하게 처리
+  const expiresAtRaw = permission?.expires_at ?? permission?.expiresAt ?? null
+  const isExpired = expiresAtRaw ? new Date(expiresAtRaw).getTime() < Date.now() : false
+
+  if (!permission || !isActive || isExpired) {
+    console.log("[Middleware] 케이스 B: 권한 차단 →", {
+      permissionExists: !!permission,
+      isActive,
+      isExpired,
+    })
     // next 파라미터를 절대로 붙이지 않는다.
     // next 를 붙이면 payment 사이트가 다시 이쪽으로 튕겨내어 무한 루프가 발생한다.
     return NextResponse.redirect(SUBSCRIPTION_URL)
@@ -122,7 +140,7 @@ export async function middleware(request: NextRequest) {
   // ── 케이스 C: 인증됨, SaaS 권한도 있음 → 정상 통과 ───────
   // API가 리턴한 유저 등급/회사명을 헤더에 주입하여 Page.tsx 에서 활용 가능하게 한다.
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.set("X-User-Level", permission.user_level ?? "")
+  requestHeaders.set("X-User-Level", permission.user_level ?? permission.userLevel ?? "")
   requestHeaders.set("X-Company-Name", verifyData.company?.name ?? "")
 
   const response = NextResponse.next({ request: { headers: requestHeaders } })
