@@ -4,7 +4,7 @@ import { getCookieDomain } from "@/utils/supabase/cookie-domain"
 
 // ── 통합 인증/구독 시스템 상수 ──────────────────────────────
 /** 현재 SaaS 프로그램의 고유 서비스명 (DB 저장 키값) */
-const PROGRAM_ID = "drivermgmt"
+const PROGRAM_ID = "kukdongdriver"
 /** 통합 결제 사이트 로그인 주소 */
 const LOGIN_URL = "https://payment.1004.help/auth/login"
 /** 통합 결제 사이트 구독 관리 주소 */
@@ -64,68 +64,75 @@ export async function middleware(request: NextRequest) {
     },
   )
 
-  // createServerClient 와 getUser() 사이에 다른 코드를 넣지 말 것.
-  // 작은 실수로도 사용자가 무작위로 로그아웃되는 디버깅이 어려운 문제가 발생할 수 있다.
-
-  // ── 케이스 A: 미인증 처리 ─────────────────────────────────
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  // ── 통합 결제 허브 권한 검증 API 호출 ────────────────────
+  const verifyUrl = `https://payment.1004.help/api/v1/verify-permission?program_id=${PROGRAM_ID}`
   const pathname = request.nextUrl.pathname
 
-  if (!user) {
+  // 사용자의 요청 쿠키를 그대로 전달하여 인증 상태를 공유한다.
+  const cookieHeader = request.headers.get("cookie") ?? ""
+
+  let verifyData: {
+    authenticated?: boolean
+    user?: unknown
+    permission?: { is_active?: boolean; expires_at?: string | null; user_level?: string }
+    company?: { name?: string }
+  } = {}
+
+  try {
+    const verifyRes = await fetch(verifyUrl, {
+      headers: { cookie: cookieHeader },
+      // Edge Runtime 에서 캐시를 사용하지 않도록 설정
+      cache: "no-store",
+    })
+    if (verifyRes.ok) {
+      verifyData = await verifyRes.json()
+    }
+  } catch {
+    // 네트워크 오류 시 미인증으로 간주
+  }
+
+  // ── 케이스 A: 미인증 처리 ─────────────────────────────────
+  if (!verifyData.authenticated || !verifyData.user) {
     // 메인 페이지(/)는 미인증이더라도 통과 — 클라이언트에서 팝업으로 안내
     if (pathname === "/") {
-      console.log("[Middleware] 케이스 A: 미인증이지만 메인 페이지는 통과 (팝업으로 안내)")
       return supabaseResponse
     }
 
-    // 내부 서비스/관리자 페이지는 기존처럼 미들웨어 단에서 강력 차단
     const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
     const host = request.headers.get("host") ?? request.nextUrl.host
     const currentUrl = `${proto}://${host}${pathname}${request.nextUrl.search}`
 
     const loginUrl = new URL(LOGIN_URL)
     loginUrl.searchParams.set("next", currentUrl)
-    console.log("[Middleware] 케이스 A: 미인증 - 로그인으로 이동", { cookieDomain, loginUrl: loginUrl.toString() })
     return NextResponse.redirect(loginUrl)
   }
 
-  console.log("[Middleware] 세션 확인됨 - user.id:", user.id)
-
   // ── 케이스 B: 인증됨, SaaS 권한 없음/만료 ────────────────
-  // all_use_programs 스키마의 user_saas_permissions 테이블 단일 조회
-  const { data: permission, error: permError } = await supabase
-    .schema("all_use_programs")
-    .from("user_saas_permissions")
-    .select("is_active, expires_at")
-    .eq("user_id", user.id)
-    .eq("program_id", PROGRAM_ID)
-    .single()
-
+  const permission = verifyData.permission
   const isExpired = permission?.expires_at
     ? new Date(permission.expires_at).getTime() < Date.now()
     : true
 
   if (!permission || permission.is_active !== true || isExpired) {
-    console.log("[Middleware] 케이스 B: 권한 없음/만료 - 구독 페이지로 이동", {
-      permission,
-      isExpired,
-      permError: permError?.message,
-    })
     // next 파라미터를 절대로 붙이지 않는다.
     // next 를 붙이면 payment 사이트가 다시 이쪽으로 튕겨내어 무한 루프가 발생한다.
     return NextResponse.redirect(SUBSCRIPTION_URL)
   }
 
   // ── 케이스 C: 인증됨, SaaS 권한도 있음 → 정상 통과 ───────
-  console.log("[Middleware] 케이스 C: 인증 + 권한 확인 - 정상 통과", {
-    is_active: permission.is_active,
-    expires_at: permission.expires_at,
+  // API가 리턴한 유저 등급/회사명을 헤더에 주입하여 Page.tsx 에서 활용 가능하게 한다.
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("X-User-Level", permission.user_level ?? "")
+  requestHeaders.set("X-Company-Name", verifyData.company?.name ?? "")
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+
+  // supabaseResponse 에 설정된 쿠키(갱신된 세션 등)를 최종 응답에 복사한다.
+  supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
+    response.cookies.set(name, value)
   })
-  // 세션 쿠키 갱신 정보를 유지하기 위해 supabaseResponse 를 그대로 반환한다.
-  return supabaseResponse
+
+  return response
 }
 
 export const config = {
