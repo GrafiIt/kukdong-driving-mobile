@@ -65,11 +65,11 @@ export async function middleware(request: NextRequest) {
   )
 
   // ── 통합 결제 허브 권한 검증 API 호출 ────────────────────
-  const verifyUrl = `https://payment.1004.help/api/v1/verify-permission?program_id=${PROGRAM_ID}`
+  const verifyUrl = `https://payment.1004.help/api/v1/verify-permission?program_id=${PROGRAM_ID}&_t=${Date.now()}`
   const pathname = request.nextUrl.pathname
 
-  // 사용자의 요청 쿠키를 그대로 전달하여 인증 상태를 공유한다.
-  const cookieHeader = request.headers.get("cookie") ?? ""
+  // request.cookies.getAll() 로 재조합 → 에지 리다이렉트 시 쿠키 누락 방지
+  const cookieHeader = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join("; ")
 
   let verifyData: {
     authenticated?: boolean
@@ -115,6 +115,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  // ── 디버깅 라우트 예외: /debug 는 케이스 B를 완전히 우회 ──
+  if (pathname === "/debug") {
+    return supabaseResponse
+  }
+
   // ── 케이스 B: 인증됨, SaaS 권한 없음/만료 ────────────────
   const permission = verifyData.permission
 
@@ -128,9 +133,11 @@ export async function middleware(request: NextRequest) {
 
   if (!permission || !isActive || isExpired) {
     console.log("[Middleware] 케이스 B: 권한 차단 →", {
+      pathname,
       permissionExists: !!permission,
       isActive,
       isExpired,
+      verifyData: JSON.stringify(verifyData),
     })
     // next 파라미터를 절대로 붙이지 않는다.
     // next 를 붙이면 payment 사이트가 다시 이쪽으로 튕겨내어 무한 루프가 발생한다.
