@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
   )
 
   // ── 통합 결제 허브 권한 검증 API 호출 ────────────────────
-  const verifyUrl = `https://payment.1004.help/api/v1/verify-permission?program_id=${PROGRAM_ID}`
+  const verifyUrl = `https://payment.1004.help/api/v1/verify-permission?program_id=${PROGRAM_ID}&_t=${Date.now()}`
   const pathname = request.nextUrl.pathname
 
   // request.cookies.getAll() 로 재조합 → 에지 리다이렉트 시 쿠키 누락 방지
