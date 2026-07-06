@@ -101,11 +101,6 @@ export async function middleware(request: NextRequest) {
 
   // ── 케이스 A: 미인증 처리 ─────────────────────────────────
   if (!verifyData.authenticated || !verifyData.user) {
-    // 메인 페이지(/)는 미인증이더라도 통과 — 클라이언트에서 팝업으로 안내
-    if (pathname === "/") {
-      return supabaseResponse
-    }
-
     const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
     const host = request.headers.get("host") ?? request.nextUrl.host
     const currentUrl = `${proto}://${host}${pathname}${request.nextUrl.search}`
