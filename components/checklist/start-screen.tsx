@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Home, Menu, User, Car, Calendar, Truck, Layers, Fuel } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
+import { AlignJustify, UserCircle, Gauge, Clock, Package, Boxes, Zap } from 'lucide-react'
 import { CATEGORIES, CATEGORY_COUNT, CHECKLIST_ITEMS, type InspectionResult } from '@/lib/checklist-data'
 import { createClient } from '@/utils/supabase/client'
 import { SlideMenu } from '@/components/slide-menu'
@@ -30,16 +31,16 @@ function getInspectionDateTime(): string {
 }
 
 function getCategoryIcon(key: string) {
-  if (key === 'vehicle') return <Truck size={28} className="text-[#1e3a5f]" />
-  if (key === 'work') return <Layers size={28} className="text-[#2e7d52]" />
-  if (key === 'tank') return <Fuel size={28} className="text-[#5c3a9e]" />
+  if (key === 'vehicle') return <Package size={28} className="text-[#1a3a52]" />
+  if (key === 'work') return <Boxes size={28} className="text-[#1a3a52]" />
+  if (key === 'tank') return <Zap size={28} className="text-[#1a3a52]" />
   return null
 }
 
 function getCategoryBg(key: string) {
-  if (key === 'vehicle') return 'bg-blue-50'
-  if (key === 'work') return 'bg-green-50'
-  if (key === 'tank') return 'bg-purple-50'
+  if (key === 'vehicle') return 'bg-orange-50'
+  if (key === 'work') return 'bg-slate-100'
+  if (key === 'tank') return 'bg-orange-50'
   return 'bg-gray-50'
 }
 
@@ -110,19 +111,26 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
       {/* 상단 헤더 */}
-      <header className="flex items-center px-5 pt-6 pb-4 bg-white gap-4">
-        {/* 좌측: 홈 버튼 */}
+      <header className="flex items-center px-5 pt-4 pb-4 bg-white gap-4 border-b border-gray-200">
+        {/* 좌측: CI 로고 */}
         <Link
           href="/"
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
           aria-label="홈으로 이동"
         >
-          <Home size={22} className="text-[#1e3a5f]" />
+          <Image
+            src="/logo-ci.png"
+            alt="극동 로지텍 CI"
+            width={48}
+            height={40}
+            priority
+            className="object-contain"
+          />
         </Link>
 
         {/* 중앙: 제목 (flex-1로 중앙 정렬) */}
         <div className="flex-1 flex justify-center">
-          <h1 className="text-[17px] font-bold text-[#1e3a5f] leading-tight">
+          <h1 className="text-[17px] font-bold text-[#1a3a52] leading-tight tracking-tight">
             운전자 운행 전 일일체크리스트
           </h1>
         </div>
@@ -131,83 +139,83 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
         <button
           onClick={() => setIsMenuOpen(true)}
           aria-label="메뉴 열기"
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+          className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 transition-colors flex-shrink-0"
           aria-haspopup="true"
           aria-expanded={isMenuOpen}
         >
-          <Menu size={22} className="text-[#1e3a5f]" />
+          <AlignJustify size={22} className="text-[#1a3a52]" />
         </button>
       </header>
 
       {/* 본문 */}
       <main className="flex-1 px-4 pb-32 flex flex-col gap-3">
         {/* 정보 카드 */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-none border border-gray-200 overflow-hidden">
           {/* 작업자명 */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <User size={18} className="text-[#1e3a5f]" />
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
+            <div className="w-9 h-9 rounded-none bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <UserCircle size={18} className="text-[#1a3a52]" />
             </div>
-            <span className="text-sm text-gray-500 flex-1">작업자명</span>
-            <span className="text-sm font-semibold text-[#1e3a5f]">{DRIVER_NAME}</span>
+            <span className="text-sm text-gray-600 flex-1 font-medium">작업자명</span>
+            <span className="text-sm font-bold text-[#1a3a52]">{DRIVER_NAME}</span>
           </div>
           {/* 차량번호 */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <Car size={18} className="text-[#1e3a5f]" />
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
+            <div className="w-9 h-9 rounded-none bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <Gauge size={18} className="text-[#1a3a52]" />
             </div>
-            <span className="text-sm text-gray-500 flex-1">차량번호</span>
-            <span className="text-sm font-semibold text-[#1e3a5f]">{VEHICLE_NUMBER}</span>
+            <span className="text-sm text-gray-600 flex-1 font-medium">차량번호</span>
+            <span className="text-sm font-bold text-[#1a3a52]">{VEHICLE_NUMBER}</span>
           </div>
           {/* 점검일시 */}
           <div className="flex items-center gap-3 px-5 py-4">
-            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <Calendar size={18} className="text-[#1e3a5f]" />
+            <div className="w-9 h-9 rounded-none bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <Clock size={18} className="text-[#1a3a52]" />
             </div>
-            <span className="text-sm text-gray-500 flex-1">점검일시</span>
-            <span className="text-sm font-semibold text-[#1e3a5f]">{getInspectionDateTime()}</span>
+            <span className="text-sm text-gray-600 flex-1 font-medium">점검일시</span>
+            <span className="text-sm font-bold text-[#1a3a52]">{getInspectionDateTime()}</span>
           </div>
         </div>
 
         {/* 전체 진행률 카드 */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4">
+        <div className="bg-white rounded-none border border-gray-200 px-5 py-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-gray-700">전체 점검 진행률</span>
-            <span className="text-sm text-gray-500">
-              <span className="font-bold text-[#1e3a5f]">{displayCompleted}</span>
+            <span className="text-sm font-bold text-[#1a3a52]">전체 점검 진행률</span>
+            <span className="text-sm text-gray-600">
+              <span className="font-bold text-[#ff6b35]">{displayCompleted}</span>
               {' / '}{totalItems} 항목
             </span>
           </div>
           {/* 프로그레스 바 */}
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+          <div className="h-2 bg-gray-300 rounded-none overflow-hidden mb-3">
             <div
-              className="h-full bg-[#1e3a5f] rounded-full transition-all duration-500"
+              className="h-full bg-[#ff6b35] transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <p className="text-center text-xl font-bold text-[#1e3a5f]">{progressPercent}%</p>
+          <p className="text-center text-2xl font-bold text-[#1a3a52]">{progressPercent}%</p>
         </div>
 
         {/* 카테고리별 요약 카드 */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-4 py-4">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white rounded-none border border-gray-200 px-4 py-4">
+          <div className="grid grid-cols-3 gap-2">
             {CATEGORIES.map((cat) => {
               const total = CATEGORY_COUNT[cat.key]
               const completed = getCategoryCompleted(cat.key)
               return (
                 <div
                   key={cat.key}
-                  className={`${getCategoryBg(cat.key)} rounded-xl flex flex-col items-center py-4 gap-2`}
+                  className={`${getCategoryBg(cat.key)} rounded-none flex flex-col items-center py-4 gap-2 border border-gray-200`}
                 >
                   {getCategoryIcon(cat.key)}
-                  <span className="text-xs font-semibold text-gray-700 text-center leading-tight">
+                  <span className="text-xs font-bold text-[#1a3a52] text-center leading-tight">
                     {cat.label}
                   </span>
                   <div className="text-center">
-                    <span className="text-base font-bold text-[#1e3a5f]">{completed}</span>
-                    <span className="text-xs text-gray-500"> / {total}</span>
+                    <span className="text-lg font-bold text-[#ff6b35]">{completed}</span>
+                    <span className="text-xs text-gray-600"> / {total}</span>
                   </div>
-                  <span className="text-xs text-gray-500">항목</span>
+                  <span className="text-xs text-gray-600 font-medium">항목</span>
                 </div>
               )
             })}
@@ -216,16 +224,16 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
       </main>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-200">
         <button
           onClick={handleMainButtonClick}
           disabled={isLoadingEdit}
-          className={`w-full h-14 text-white text-lg font-bold rounded-2xl shadow-md transition-colors
+          className={`w-full h-14 text-white text-lg font-bold rounded-none transition-colors
             ${isLoadingEdit
               ? 'bg-gray-400 cursor-not-allowed opacity-70'
               : isTodayCompleted
-              ? 'bg-[#2e7d52] hover:bg-[#256544] active:bg-[#1d4f35]'
-              : 'bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035]'
+              ? 'bg-[#1a3a52] hover:bg-[#0f2635] active:bg-[#081a28]'
+              : 'bg-[#ff6b35] hover:bg-[#e55a24] active:bg-[#cc4910]'
             }`}
         >
           {isLoadingEdit

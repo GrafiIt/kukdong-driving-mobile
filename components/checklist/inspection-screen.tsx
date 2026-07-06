@@ -1,7 +1,9 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { ChevronLeft, Camera, X, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowLeft, ImagePlus, XCircle, AlertTriangle } from 'lucide-react'
 import {
   CATEGORIES,
   CHECKLIST_ITEMS,
@@ -169,19 +171,19 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
-      <div className="w-full max-w-md bg-white rounded-t-3xl px-5 pt-5 pb-8 shadow-2xl">
+      <div className="w-full max-w-md bg-white rounded-none px-5 pt-5 pb-8 shadow-2xl">
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-3">
           <div className="flex items-center gap-2">
-            <AlertCircle size={20} className="text-red-500" />
-            <span className="font-bold text-red-600 text-sm">이상 항목</span>
+            <AlertTriangle size={20} className="text-red-600" />
+            <span className="font-bold text-red-700 text-sm">이상 항목</span>
           </div>
           <button
             onClick={onCancel}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100"
+            className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100"
             aria-label="닫기"
           >
-            <X size={18} className="text-gray-500" />
+            <XCircle size={18} className="text-gray-500" />
           </button>
         </div>
 
@@ -223,10 +225,10 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isCompressing}
-              className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 hover:bg-gray-50 transition-colors disabled:opacity-50 flex-shrink-0"
+              className="w-24 h-24 rounded-none border-2 border-dashed border-gray-400 flex flex-col items-center justify-center gap-1 hover:bg-orange-50 transition-colors disabled:opacity-50 flex-shrink-0"
             >
-              <Camera size={20} className="text-gray-400" />
-              <span className="text-xs text-gray-400">
+              <ImagePlus size={20} className="text-gray-600" />
+              <span className="text-xs text-gray-600">
                 {isCompressing ? '압축 중...' : '사진 추가'}
               </span>
             </button>
@@ -246,7 +248,7 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
         {/* 저장 버튼 */}
         <button
           onClick={() => onSave(note, images)}
-          className="w-full h-12 bg-[#1e3a5f] text-white font-bold rounded-xl text-sm hover:bg-[#162d4a] transition-colors"
+          className="w-full h-12 bg-[#ff6b35] text-white font-bold rounded-none text-sm hover:bg-[#e55a24] transition-colors"
         >
           저장
         </button>
@@ -314,29 +316,47 @@ export default function InspectionScreen({
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
       {/* 상단 헤더 */}
-      <header className="flex items-center gap-3 px-4 pt-6 pb-3">
+      <header className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-gray-200">
+        {/* 좌측: CI 로고 */}
+        <Link
+          href="/"
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+          aria-label="홈으로 이동"
+        >
+          <Image
+            src="/logo-ci.png"
+            alt="극동 로지텍 CI"
+            width={48}
+            height={40}
+            priority
+            className="object-contain"
+          />
+        </Link>
+        
+        {/* 중앙: 제목 */}
+        <h1 className="text-lg font-bold text-[#1a3a52] flex-1 text-center tracking-tight">점검 체크리스트</h1>
+        
+        {/* 우측: 뒤로 가기 */}
         <button
           onClick={onBack}
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded hover:bg-gray-100 transition-colors flex-shrink-0"
           aria-label="뒤로 가기"
         >
-          <ChevronLeft size={24} className="text-[#1e3a5f]" />
+          <ArrowLeft size={24} className="text-[#1a3a52]" />
         </button>
-        <h1 className="text-lg font-bold text-[#1e3a5f] flex-1 text-center">점검 체크리스트</h1>
-        <div className="w-9" />
       </header>
 
       {/* 진행률 미니바 + 탭 (sticky 고정 영역) */}
       <div className="sticky top-0 z-40 bg-white">
         {/* 진행률 미니바 */}
-        <div className="px-4 pt-2 pb-3 border-b border-gray-100">
+        <div className="px-4 pt-2 pb-3 border-b border-gray-200">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-gray-500">{totalCompleted} / {totalItems} 항목 완료</span>
-            <span className="text-xs font-bold text-[#1e3a5f]">{progressPercent}%</span>
+            <span className="text-xs text-gray-600 font-medium">{totalCompleted} / {totalItems} 항목 완료</span>
+            <span className="text-xs font-bold text-[#ff6b35]">{progressPercent}%</span>
           </div>
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-gray-300 rounded-none overflow-hidden">
             <div
-              className="h-full bg-[#1e3a5f] rounded-full transition-all duration-300"
+              className="h-full bg-[#ff6b35] transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -353,34 +373,34 @@ export default function InspectionScreen({
             // 탭별 컬러 테마
             const theme = {
               vehicle: {
-                activeBg: 'bg-blue-600',
-                activeText: 'text-white',
-                inactiveBg: 'bg-blue-50',
-                inactiveText: 'text-blue-700',
-                inactiveBorder: 'border-blue-300',
-                inactiveShadow: 'border-b-4 border-b-blue-300',
-                doneText: 'text-blue-200',
-                inactiveDoneText: 'text-blue-400',
-              },
-              work: {
-                activeBg: 'bg-emerald-600',
-                activeText: 'text-white',
-                inactiveBg: 'bg-emerald-50',
-                inactiveText: 'text-emerald-700',
-                inactiveBorder: 'border-emerald-300',
-                inactiveShadow: 'border-b-4 border-b-emerald-300',
-                doneText: 'text-emerald-200',
-                inactiveDoneText: 'text-emerald-500',
-              },
-              tank: {
-                activeBg: 'bg-orange-500',
+                activeBg: 'bg-[#ff6b35]',
                 activeText: 'text-white',
                 inactiveBg: 'bg-orange-50',
-                inactiveText: 'text-orange-700',
+                inactiveText: 'text-[#1a3a52]',
                 inactiveBorder: 'border-orange-300',
-                inactiveShadow: 'border-b-4 border-b-orange-300',
-                doneText: 'text-orange-200',
-                inactiveDoneText: 'text-orange-400',
+                inactiveShadow: 'border-b-2 border-b-orange-400',
+                doneText: 'text-orange-100',
+                inactiveDoneText: 'text-orange-600',
+              },
+              work: {
+                activeBg: 'bg-[#1a3a52]',
+                activeText: 'text-white',
+                inactiveBg: 'bg-slate-100',
+                inactiveText: 'text-[#1a3a52]',
+                inactiveBorder: 'border-slate-300',
+                inactiveShadow: 'border-b-2 border-b-slate-400',
+                doneText: 'text-slate-200',
+                inactiveDoneText: 'text-slate-600',
+              },
+              tank: {
+                activeBg: 'bg-[#5a8fae]',
+                activeText: 'text-white',
+                inactiveBg: 'bg-slate-50',
+                inactiveText: 'text-[#1a3a52]',
+                inactiveBorder: 'border-slate-300',
+                inactiveShadow: 'border-b-2 border-b-slate-400',
+                doneText: 'text-slate-100',
+                inactiveDoneText: 'text-slate-500',
               },
             } as const
 
@@ -391,21 +411,21 @@ export default function InspectionScreen({
                 key={cat.key}
                 onClick={() => setActiveTab(cat.key)}
                 className={`
-                  flex-1 flex flex-col items-center py-2.5 px-1 rounded-xl
+                  flex-1 flex flex-col items-center py-2.5 px-1 rounded-none
                   font-bold text-xs gap-0.5 select-none
                   transition-all duration-150 ease-in-out
                   border
                   ${isActive
-                    ? `${t.activeBg} ${t.activeText} border-transparent shadow-sm translate-y-0.5`
-                    : `${t.inactiveBg} ${t.inactiveText} ${t.inactiveBorder} ${t.inactiveShadow} hover:brightness-95 active:translate-y-0.5 active:border-b`
+                    ? `${t.activeBg} ${t.activeText} border-transparent shadow-md translate-y-0.5`
+                    : `${t.inactiveBg} ${t.inactiveText} ${t.inactiveBorder} ${t.inactiveShadow} hover:brightness-98 active:translate-y-0.5 active:border-b`
                   }
                 `}
               >
                 <span>{cat.label}</span>
                 <span className={`text-[10px] font-semibold ${
                   isActive
-                    ? (isAllTabDone ? t.doneText : 'text-white/70')
-                    : (isAllTabDone ? t.inactiveDoneText : 'text-gray-400')
+                    ? (isAllTabDone ? t.doneText : 'text-white/75')
+                    : (isAllTabDone ? t.inactiveDoneText : 'text-gray-500')
                 }`}>
                   {completed}/{total}
                 </span>
@@ -426,17 +446,17 @@ export default function InspectionScreen({
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
+                className="bg-white rounded-none border border-gray-200 overflow-hidden"
               >
                 {/* 항목 헤더 */}
-                <div className="flex items-start gap-3 px-4 pt-4 pb-3">
+                <div className="flex items-start gap-3 px-4 pt-4 pb-3 border-b border-gray-200">
                   <span
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${
+                    className={`w-7 h-7 rounded-none flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${
                       isAbnormal
-                        ? 'bg-red-500 text-white'
+                        ? 'bg-red-600 text-white'
                         : isNormal
-                        ? 'bg-[#1e3a5f] text-white'
-                        : 'bg-gray-200 text-gray-600'
+                        ? 'bg-[#1a3a52] text-white'
+                        : 'bg-gray-300 text-gray-700'
                     }`}
                   >
                     {item.order}
@@ -452,20 +472,20 @@ export default function InspectionScreen({
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleStatusClick(item.id, 'normal')}
-                        className={`flex-1 h-11 rounded-xl font-bold text-sm transition-colors ${
+                        className={`flex-1 h-11 rounded-none font-bold text-sm transition-colors border ${
                           isNormal
-                            ? 'bg-[#1e3a5f] text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-[#1a3a52] text-white border-[#1a3a52] shadow-sm'
+                            : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
                         }`}
                       >
                         정상
                       </button>
                       <button
                         onClick={() => handleStatusClick(item.id, 'abnormal')}
-                        className={`flex-1 h-11 rounded-xl font-bold text-sm transition-colors ${
+                        className={`flex-1 h-11 rounded-none font-bold text-sm transition-colors border ${
                           isAbnormal
-                            ? 'bg-red-500 text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                            : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
                         }`}
                       >
                         이상
@@ -523,14 +543,14 @@ export default function InspectionScreen({
       </main>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-200">
         <button
           onClick={onFinish}
           disabled={!isAllDone}
-          className={`w-full h-14 text-white text-lg font-bold rounded-2xl shadow-md transition-colors ${
+          className={`w-full h-14 text-white text-lg font-bold rounded-none shadow-md transition-colors ${
             isAllDone
-              ? 'bg-[#1e3a5f] hover:bg-[#162d4a] active:bg-[#0f2035]'
-              : 'bg-gray-300 cursor-not-allowed'
+              ? 'bg-[#1a3a52] hover:bg-[#0f2635] active:bg-[#081a28]'
+              : 'bg-gray-400 cursor-not-allowed'
           }`}
         >
           {isAllDone ? '점검 완료 → 최종 확인' : `${totalItems - totalCompleted}개 항목 미완료`}
