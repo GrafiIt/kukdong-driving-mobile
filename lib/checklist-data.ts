@@ -39,9 +39,9 @@ export interface CompressedImage {
 // 카테고리 목록 (탭 순서: 차량 → 작업 → 탱크)
 // ────────────────────────────────────────
 export const CATEGORIES: Category[] = [
-  { key: 'vehicle', label: '차량점검', icon: '🚛', color: '#1e3a5f' },
-  { key: 'work',    label: '작업관련', icon: '📋', color: '#1e3a5f' },
-  { key: 'tank',    label: '탱크점검', icon: '🛢', color: '#1e3a5f' },
+  { key: 'vehicle', label: '차량점검',    icon: '🚛', color: '#1e3a5f' },
+  { key: 'work',    label: '운전자 점검', icon: '📋', color: '#1e3a5f' },
+  { key: 'tank',    label: '비고 및 서명', icon: '🛢', color: '#1e3a5f' },
 ]
 
 // ────────────────────────────────────────
