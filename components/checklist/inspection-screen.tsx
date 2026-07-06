@@ -1,6 +1,8 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { ArrowLeft, ImagePlus, XCircle, AlertTriangle } from 'lucide-react'
 import {
   CATEGORIES,
@@ -314,16 +316,34 @@ export default function InspectionScreen({
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
       {/* 상단 헤더 */}
-      <header className="flex items-center gap-3 px-4 pt-6 pb-3 border-b border-gray-200">
+      <header className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-gray-200">
+        {/* 좌측: CI 로고 */}
+        <Link
+          href="/"
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+          aria-label="홈으로 이동"
+        >
+          <Image
+            src="/logo-ci.png"
+            alt="극동 로지텍 CI"
+            width={48}
+            height={40}
+            priority
+            className="object-contain"
+          />
+        </Link>
+        
+        {/* 중앙: 제목 */}
+        <h1 className="text-lg font-bold text-[#1a3a52] flex-1 text-center tracking-tight">점검 체크리스트</h1>
+        
+        {/* 우측: 뒤로 가기 */}
         <button
           onClick={onBack}
-          className="w-9 h-9 flex items-center justify-center rounded hover:bg-gray-100 transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded hover:bg-gray-100 transition-colors flex-shrink-0"
           aria-label="뒤로 가기"
         >
           <ArrowLeft size={24} className="text-[#1a3a52]" />
         </button>
-        <h1 className="text-lg font-bold text-[#1a3a52] flex-1 text-center tracking-tight">점검 체크리스트</h1>
-        <div className="w-9" />
       </header>
 
       {/* 진행률 미니바 + 탭 (sticky 고정 영역) */}

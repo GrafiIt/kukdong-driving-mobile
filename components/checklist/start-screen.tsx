@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { HomeIcon, AlignJustify, UserCircle, Gauge, Clock, Package, Boxes, Zap } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { AlignJustify, UserCircle, Gauge, Clock, Package, Boxes, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { CATEGORIES, CATEGORY_COUNT, CHECKLIST_ITEMS, type InspectionResult } from '@/lib/checklist-data'
 import { createClient } from '@/utils/supabase/client'
@@ -110,14 +112,21 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
       {/* 상단 헤더 */}
-      <header className="flex items-center px-5 pt-6 pb-4 bg-white gap-4 border-b border-gray-200">
-        {/* 좌측: 홈 버튼 */}
+      <header className="flex items-center px-5 pt-4 pb-4 bg-white gap-4 border-b border-gray-200">
+        {/* 좌측: CI 로고 */}
         <Link
           href="/"
-          className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-100 transition-colors flex-shrink-0"
+          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
           aria-label="홈으로 이동"
         >
-          <HomeIcon size={22} className="text-[#1a3a52]" />
+          <Image
+            src="/logo-ci.png"
+            alt="극동 로지텍 CI"
+            width={48}
+            height={40}
+            priority
+            className="object-contain"
+          />
         </Link>
 
         {/* 중앙: 제목 (flex-1로 중앙 정렬) */}

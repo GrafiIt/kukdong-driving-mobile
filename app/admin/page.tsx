@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { AdminSidebar, type AdminMenuKey } from '@/components/admin/admin-sidebar'
 import { InspectionTable } from '@/components/admin/inspection-table'
 import { createClient } from '@/utils/supabase/client'
@@ -41,8 +43,30 @@ export default function AdminPage() {
       />
 
       {/* 우측 메인 콘텐츠: 사이드바 접힘 여부에 관계없이 남은 공간 전체 차지 */}
-      <main className="flex-1 overflow-y-auto p-8 min-w-0">
-        {activeMenu === 'checklist' && <InspectionTable />}
+      <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
+        {/* 헤더 */}
+        <header className="flex items-center px-8 pt-6 pb-4 border-b border-gray-200 flex-shrink-0 gap-4">
+          <Link
+            href="/"
+            className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+            aria-label="홈으로 이동"
+          >
+            <Image
+              src="/logo-ci.png"
+              alt="극동 로지텍 CI"
+              width={48}
+              height={40}
+              priority
+              className="object-contain"
+            />
+          </Link>
+          <h1 className="text-xl font-bold text-[#1a3a52] tracking-tight">관리자 페이지</h1>
+        </header>
+        
+        {/* 콘텐츠 */}
+        <div className="flex-1 overflow-y-auto p-8">
+          {activeMenu === 'checklist' && <InspectionTable />}
+        </div>
       </main>
     </div>
   )
