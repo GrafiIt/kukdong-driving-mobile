@@ -8,14 +8,12 @@ import { createClient } from '@/utils/supabase/client';
 interface SlideMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  isAuthenticated: boolean | null;
-  onRequireLogin: () => void;
 }
 
 // 통합 인증 사이트 로그인 페이지
 const LOGIN_URL = 'https://payment.1004.help/auth/login';
 
-export function SlideMenu({ isOpen, onClose, isAuthenticated, onRequireLogin }: SlideMenuProps) {
+export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -32,13 +30,6 @@ export function SlideMenu({ isOpen, onClose, isAuthenticated, onRequireLogin }: 
   }, [isOpen]);
 
   const handleAdminClick = () => {
-    if (!isAuthenticated) {
-      // 미인증 상태: 메뉴 닫고 로그인 모달 표시
-      onClose();
-      onRequireLogin();
-      return;
-    }
-    // 인증 상태: 라우팅 먼저 → 메뉴 닫기 (타이밍 이슈 방지)
     router.push('/admin');
     onClose();
   };
@@ -57,7 +48,6 @@ export function SlideMenu({ isOpen, onClose, isAuthenticated, onRequireLogin }: 
     } catch (err) {
       console.error('[v0] 로그아웃 오류:', err);
     } finally {
-      // 통합 인증 사이트 로그인 페이지로 이동
       window.location.href = LOGIN_URL;
     }
   };
@@ -118,21 +108,19 @@ export function SlideMenu({ isOpen, onClose, isAuthenticated, onRequireLogin }: 
             <span className="font-semibold text-base">2. 휴대폰 설치</span>
           </button>
 
-          {/* 3. 로그아웃 — 인증된 사용자에게만 표시 */}
-          {isAuthenticated && (
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-100 hover:bg-slate-700 active:bg-slate-600 transition-colors text-left disabled:opacity-60"
-            >
-              <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                <LogOut size={20} className="text-slate-200" />
-              </div>
-              <span className="font-semibold text-base">
-                {isLoggingOut ? '로그아웃 중...' : '3. 로그아웃'}
-              </span>
-            </button>
-          )}
+          {/* 3. 로그아웃 */}
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-100 hover:bg-slate-700 active:bg-slate-600 transition-colors text-left disabled:opacity-60"
+          >
+            <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <LogOut size={20} className="text-slate-200" />
+            </div>
+            <span className="font-semibold text-base">
+              {isLoggingOut ? '로그아웃 중...' : '3. 로그아웃'}
+            </span>
+          </button>
         </nav>
 
         {/* 메뉴 하단 버전 표시 */}
