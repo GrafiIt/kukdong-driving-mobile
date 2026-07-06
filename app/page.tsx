@@ -1,251 +1,237 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
-import { Menu, LogIn, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { SlideMenu } from '@/components/slide-menu';
-import { createClient } from '@/utils/supabase/client';
+import { useState, useCallback } from 'react'
+import { createInitialResults, type InspectionResult, type CompressedImage } from '@/lib/checklist-data'
+import { dataUrlToBlob } from '@/lib/compress-image'
+import { createClient } from '@/utils/supabase/client'
+import StartScreen from '@/components/checklist/start-screen'
+import InspectionScreen from '@/components/checklist/inspection-screen'
+import SummaryScreen from '@/components/checklist/summary-screen'
 
-// ── 통합 인증 상수 ────────────────────────────────────────
-const LOGIN_BASE_URL = 'https://payment.1004.help/auth/login';
-// ─────────────────────────────────────────────────────────
+type Step = 'start' | 'inspection' | 'summary'
 
-interface MenuItemProps {
-  title: string;
-}
+const DRIVER_NAME = '이윤상'
+const VEHICLE_NUMBER = '부산 99바 1234'
 
-// 로그인 안내 모달 컴포넌트
-function LoginRequiredModal({
-  isOpen,
-  onConfirm,
-  onCancel,
-}: {
-  isOpen: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  // 모달 열릴 때 body 스크롤 잠금
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+export default function HomePage() {
+  const [step, setStep] = useState<Step>('start')
+  const [results, setResults] = useState<Record<string, InspectionResult>>(createInitialResults)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false)
 
-  if (!isOpen) return null;
+  // ── 단일 항목 결과 업데이트 ──
+  const handleUpdateResult = useCallback(
+    (itemId: string, update: Partial<InspectionResult>) => {
+      setResults((prev) => ({
+        ...prev,
+        [itemId]: { ...prev[itemId], ...update },
+      }))
+    },
+    []
+  )
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="login-modal-title"
-    >
-      {/* 딤 처리 배경 */}
-      <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-        aria-hidden="true"
-      />
+  // ── 신규 점검 시작 ──
+  const handleStart = useCallback(() => {
+    setEditingId(null)
+    setResults(createInitialResults())
+    setStep('inspection')
+  }, [])
 
-      {/* 모달 카드 */}
-      <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
-        {/* 상단 강조 바 */}
-        <div className="h-1.5 w-full bg-slate-700" />
+  // ── 오늘 작성한 기록 불러와 수정 모드 진입 ──
+  const handleEdit = useCallback(async (inspectionId: string) => {
+    setIsLoadingEdit(true)
+    try {
+      const supabase = createClient()
 
-        <div className="px-7 pt-8 pb-7">
-          {/* 아이콘 */}
-          <div className="flex justify-center mb-5">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-              <LogIn size={28} className="text-slate-700" strokeWidth={2} />
-            </div>
-          </div>
+      const { data: items, error: itemsError } = await supabase
+        .schema('driver-checklist')
+        .from('kukdong_driver_inspection_items')
+        .select('item_id, status, number_value, note, image_urls')
+        .eq('inspection_id', inspectionId)
 
-          {/* 제목 */}
-          <h2
-            id="login-modal-title"
-            className="text-center text-lg font-bold text-slate-900 mb-2 text-balance"
-          >
-            로그인이 필요한 서비스입니다
-          </h2>
-
-          {/* 설명 */}
-          <p className="text-center text-sm text-slate-500 leading-relaxed mb-7 text-pretty">
-            로그인 페이지로 이동하시겠습니까?
-          </p>
-
-          {/* 버튼 그룹 */}
-          <div className="flex gap-3">
-            <button
-              onClick={onCancel}
-              className="flex-1 h-12 rounded-2xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 active:bg-slate-100 transition-colors"
-            >
-              아니오
-            </button>
-            <button
-              onClick={onConfirm}
-              className="flex-1 h-12 rounded-2xl bg-slate-700 text-white font-semibold text-sm hover:bg-slate-600 active:bg-slate-800 transition-colors shadow-md"
-            >
-              네, 이동합니다
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function Dashboard() {
-  const driverName = '이윤상';
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const router = useRouter();
-
-  const menuItems: MenuItemProps[] = [
-    { title: '일일점검\n체크리스트' },
-    { title: '운행일보' },
-    { title: '운전자\n그룹웨어' },
-    { title: '여정관리' },
-  ];
-
-  // ── 페이지 진입 시 세션 확인 ──────────────────────────────
-  useEffect(() => {
-    const checkSession = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const hasSession = !!session;
-      setIsAuthenticated(hasSession);
-      if (!hasSession) {
-        setShowLoginModal(true);
+      if (itemsError) {
+        throw new Error(itemsError.message)
       }
-    };
-    checkSession();
-  }, []);
 
-  // ── 통합 로그인 URL 생성 ──────────────────────────────────
-  // 현재 접속 중인 전체 주소를 next 파라미터로 붙여 로그인 후 원래 페이지로 복귀
-  const buildLoginUrl = useCallback(() => {
-    const url = new URL(LOGIN_BASE_URL);
-    const currentUrl =
-      typeof window !== 'undefined' ? window.location.href : 'https://kukdong-dr.1004.help/';
-    url.searchParams.set('next', currentUrl);
-    return url.toString();
-  }, []);
+      const loaded = createInitialResults()
+      for (const row of items ?? []) {
+        const itemId: string = row.item_id
+        if (!loaded[itemId]) continue
+        const images: CompressedImage[] = Array.isArray(row.image_urls)
+          ? row.image_urls.map((url: string, idx: number) => ({
+              dataUrl: url,
+              fileName: `existing_${idx + 1}.jpg`,
+              originalSize: 0,
+              compressedSize: 0,
+            }))
+          : []
 
-  // ── 모달 확인(예) 처리 ────────────────────────────────────
-  const handleLoginConfirm = () => {
-    window.location.href = buildLoginUrl();
-  };
+        loaded[itemId] = {
+          itemId,
+          status: (row.status as InspectionResult['status']) ?? 'pending',
+          numberValue: row.number_value ?? undefined,
+          note: row.note ?? undefined,
+          images: images.length > 0 ? images : undefined,
+        }
+      }
 
-  // ── 모달 취소(아니오) 처리 ────────────────────────────────
-  const handleLoginCancel = () => {
-    setShowLoginModal(false);
-  };
-
-  // ── 메뉴 버튼 클릭 처리 ──────────────────────────────────
-  // 로그인 상태가 아니면 클릭 시 다시 로그인 안내 팝업 표시
-  const handleMenuClick = (title: string) => {
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
+      setResults(loaded)
+      setEditingId(inspectionId)
+      setStep('inspection')
+    } catch (err) {
+      console.error('[checklist] 수정 데이터 불러오기 오류:', err)
+      alert('기존 점검 데이터를 불러오지 못했습니다. 다시 시도해 주세요.')
+    } finally {
+      setIsLoadingEdit(false)
     }
-    if (title === '일일점검\n체크리스트') {
-      router.push('/checklist');
+  }, [])
+
+  // ── Supabase 제출 (신규 INSERT / 수정 UPDATE 분기) ──
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    try {
+      const supabase = createClient()
+      const isEditing = editingId !== null
+      let inspectionId: string
+
+      if (isEditing) {
+        inspectionId = editingId as string
+
+        const { error: updateError } = await supabase
+          .schema('driver-checklist')
+          .from('kukdong_driver_inspections')
+          .update({
+            driver_name: DRIVER_NAME,
+            vehicle_number: VEHICLE_NUMBER,
+            inspected_at: new Date().toISOString(),
+          })
+          .eq('id', inspectionId)
+
+        if (updateError) {
+          throw new Error('점검 마스터 수정 실패: ' + updateError.message)
+        }
+
+        const { error: deleteError } = await supabase
+          .schema('driver-checklist')
+          .from('kukdong_driver_inspection_items')
+          .delete()
+          .eq('inspection_id', inspectionId)
+
+        if (deleteError) {
+          throw new Error('기존 점검 항목 삭제 실패: ' + deleteError.message)
+        }
+      } else {
+        const { data: inspection, error: inspectionError } = await supabase
+          .schema('driver-checklist')
+          .from('kukdong_driver_inspections')
+          .insert({
+            driver_name: DRIVER_NAME,
+            vehicle_number: VEHICLE_NUMBER,
+            inspected_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single()
+
+        if (inspectionError || !inspection) {
+          throw new Error(inspectionError?.message ?? '점검 마스터 저장 실패')
+        }
+
+        inspectionId = inspection.id
+      }
+
+      const itemRows: object[] = []
+
+      for (const [itemId, result] of Object.entries(results)) {
+        const imageUrls: string[] = []
+
+        if (result.images && result.images.length > 0) {
+          for (let i = 0; i < result.images.length; i++) {
+            const img = result.images[i]
+
+            if (!img.dataUrl.startsWith('data:')) {
+              imageUrls.push(img.dataUrl)
+              continue
+            }
+
+            const blob = dataUrlToBlob(img.dataUrl)
+            const filePath = `${inspectionId}/${itemId}_${i + 1}.jpg`
+
+            const { error: uploadError } = await supabase.storage
+              .from('kukdong-driver-inspection-images')
+              .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true })
+
+            if (uploadError) {
+              throw new Error('이미지 업로드에 실패했습니다: ' + uploadError.message)
+            }
+
+            const { data: publicUrl } = supabase.storage
+              .from('kukdong-driver-inspection-images')
+              .getPublicUrl(filePath)
+            imageUrls.push(publicUrl.publicUrl)
+          }
+        }
+
+        itemRows.push({
+          inspection_id: inspectionId,
+          item_id: itemId,
+          status: result.status,
+          number_value: result.numberValue ?? null,
+          note: result.note ?? null,
+          image_urls: imageUrls.length > 0 ? imageUrls : null,
+        })
+      }
+
+      const { error: itemsError } = await supabase
+        .schema('driver-checklist')
+        .from('kukdong_driver_inspection_items')
+        .insert(itemRows)
+
+      if (itemsError) {
+        throw new Error(itemsError.message)
+      }
+
+      alert(isEditing ? '점검일지가 수정되었습니다.' : '점검일지가 저장되었습니다.')
+      setResults(createInitialResults())
+      setEditingId(null)
+      setStep('start')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '제출 중 오류가 발생했습니다.'
+      alert(message + '\n다시 시도해 주세요.')
+    } finally {
+      setIsSubmitting(false)
     }
-  };
+  }
+
+  // ── 화면 렌더링 ──
+  if (step === 'start') {
+    return (
+      <StartScreen
+        results={results}
+        onStart={handleStart}
+        onEdit={handleEdit}
+        isLoadingEdit={isLoadingEdit}
+      />
+    )
+  }
+
+  if (step === 'inspection') {
+    return (
+      <InspectionScreen
+        results={results}
+        onUpdateResult={handleUpdateResult}
+        onFinish={() => setStep('summary')}
+        onBack={() => setStep('start')}
+      />
+    )
+  }
 
   return (
-    <div className="w-full min-h-screen bg-white flex flex-col overflow-hidden">
-
-      {/* ── 상단 내비게이션 바 ── */}
-      <header className="flex items-center justify-between px-5 pt-6 pb-2 flex-shrink-0">
-        {/* 좌측: CI 로고 및 텍스트 */}
-        <button
-          onClick={() => router.push('/')}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-1"
-          aria-label="홈으로 이동"
-        >
-          <div className="relative w-14 h-14 flex-shrink-0">
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/5_%E1%84%80%E1%85%B3%E1%86%A8%E1%84%83%E1%85%A9%E1%86%BC%E1%84%85%E1%85%A9%E1%84%8C%E1%85%B5%E1%84%90%E1%85%A6%E1%86%A8_CI_%E1%84%86%E1%85%A1%E1%86%AB-ZEImOG0hkYZ10GA1Ixc8NAXGROHQg7.png"
-              alt="극동로지텍"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-          <span className="text-sm font-semibold text-slate-900">극동로지텍 운전자 시스템</span>
-        </button>
-
-        {/* 중앙 여백 */}
-        <div className="flex-1" />
-
-        {/* 우측: 햄버거 메뉴 */}
-        <div className="flex justify-end">
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="w-11 h-11 flex items-center justify-center rounded-2xl text-slate-700 hover:bg-slate-100 active:bg-slate-200 transition-colors"
-            aria-label="메뉴 열기"
-            aria-haspopup="true"
-            aria-expanded={isMenuOpen}
-          >
-            <Menu size={24} strokeWidth={2} />
-          </button>
-        </div>
-      </header>
-
-      {/* ── 메인 콘텐츠 영역 ── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex flex-col flex-1">
-
-
-          {/* 메인 메뉴 그리드 */}
-          <div className="px-6 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              {menuItems.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleMenuClick(item.title)}
-                  className="aspect-square bg-slate-700 hover:bg-slate-600 rounded-3xl text-white font-bold text-center flex items-center justify-center transition-colors duration-200 text-lg leading-tight whitespace-pre-line shadow-md hover:shadow-lg"
-                >
-                  {item.title}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 하단 로고 */}
-          <div className="px-6 mt-8 mb-8 flex justify-center bg-white">
-            <div className="relative w-40 h-20">
-              <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/CI-xGa6dl9UPtCj0HlksYN7m8CxfoLiFy.png"
-                alt="휴먼로지텍 로고"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* ── 슬라이드 메뉴 ── */}
-      <SlideMenu
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        isAuthenticated={isAuthenticated}
-        onRequireLogin={() => setShowLoginModal(true)}
-      />
-
-      {/* ── 로그인 안내 모달 ── */}
-      <LoginRequiredModal
-        isOpen={showLoginModal}
-        onConfirm={handleLoginConfirm}
-        onCancel={handleLoginCancel}
-      />
-    </div>
-  );
+    <SummaryScreen
+      results={results}
+      onBack={() => setStep('inspection')}
+      onSubmit={handleSubmit}
+      isSubmitting={isSubmitting}
+    />
+  )
 }
