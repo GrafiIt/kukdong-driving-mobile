@@ -9,6 +9,7 @@ export interface ChecklistItem {
   label: string
   type: 'binary' | 'number' // binary: 정상/이상, number: 숫자 입력
   unit?: string // 숫자 입력일 때 단위 (예: "시간")
+  requiresPhoto?: boolean // true면 사진 최소 1장 첨부해야 완료로 인정
 }
 
 // 카테고리 메타 정보
@@ -45,72 +46,57 @@ export const CATEGORIES: Category[] = [
 ]
 
 // ────────────────────────────────────────
-// 18개 점검 항목 (차량 9 + 작업 7 + 탱크 2)
+// 15개 점검 항목 (차량 6 + 작업 7 + 탱크 2)
 // ────────────────────────────────────────
 export const CHECKLIST_ITEMS: ChecklistItem[] = [
-  // ── 차량점검 (9항목) ──
+  // ── 차량점검 (6항목) ──
   {
     id: 'v1',
     categoryKey: 'vehicle',
     order: 1,
-    label: '타이어 공기압 및 마모상태 확인',
+    label: '타이어 상태',
     type: 'binary',
+    requiresPhoto: true,
   },
   {
     id: 'v2',
     categoryKey: 'vehicle',
     order: 2,
-    label: '3점식 안전벨트 상태 확인',
+    label: '휠 너트 상태',
     type: 'binary',
+    requiresPhoto: true,
   },
   {
     id: 'v3',
     categoryKey: 'vehicle',
     order: 3,
-    label: '주차동 / 정조동 / 방향지시동 작동 상태 확인',
+    label: '등화 상태',
     type: 'binary',
+    requiresPhoto: false,
   },
   {
     id: 'v4',
     categoryKey: 'vehicle',
     order: 4,
-    label: '브레이크동 / 후진표시동 상태 확인',
+    label: '누유 여부',
     type: 'binary',
+    requiresPhoto: true,
   },
   {
     id: 'v5',
     categoryKey: 'vehicle',
     order: 5,
-    label: '미러 / 경적 작동 상태 확인',
+    label: '반사판 상태',
     type: 'binary',
+    requiresPhoto: false,
   },
   {
     id: 'v6',
     categoryKey: 'vehicle',
     order: 6,
-    label: '와이퍼 / 워셔액 레벨 상태 확인',
+    label: '적재함 상태',
     type: 'binary',
-  },
-  {
-    id: 'v7',
-    categoryKey: 'vehicle',
-    order: 7,
-    label: '냉각수 / 엔진오일 상태 확인',
-    type: 'binary',
-  },
-  {
-    id: 'v8',
-    categoryKey: 'vehicle',
-    order: 8,
-    label: '밴드셰이고 작동 상태 확인',
-    type: 'binary',
-  },
-  {
-    id: 'v9',
-    categoryKey: 'vehicle',
-    order: 9,
-    label: '기타 오일(엔젠이크, 구라제, 베터리액 등) 누유 확인',
-    type: 'binary',
+    requiresPhoto: true,
   },
 
   // ── 작업관련 (7항목) ──
