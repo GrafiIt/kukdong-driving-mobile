@@ -197,7 +197,7 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
           onChange={(e) => setNote(e.target.value)}
           rows={3}
           placeholder="이상 내용을 입력하세요"
-          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40 mb-4"
+          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 resize-none focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/40 mb-4"
         />
 
         {/* 사진 첨부 */}
