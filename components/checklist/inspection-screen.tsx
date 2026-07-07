@@ -3,12 +3,13 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, XCircle, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, ImagePlus, XCircle, AlertTriangle, Camera, X } from 'lucide-react'
 import {
   CATEGORIES,
   CHECKLIST_ITEMS,
   CATEGORY_COUNT,
   type CategoryKey,
+  type ChecklistItem,
   type InspectionResult,
   type CompressedImage,
 } from '@/lib/checklist-data'
@@ -257,6 +258,143 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
   )
 }
 
+// ── 완료 판정 헬퍼 ─────────────────────────────────────────────
+// requiresPhoto 항목은 정상/이상 선택 + 사진 최소 1장이 모두 충족되어야 완료로 인정
+function isItemCompleted(item: ChecklistItem, result?: InspectionResult): boolean {
+  const statusDone = result?.status === 'normal' || result?.status === 'abnormal'
+  if (!statusDone) return false
+  if (item.requiresPhoto) {
+    return (result?.images?.length ?? 0) >= 1
+  }
+  return true
+}
+
+// ── 필수 사진 첨부 모달 (최소 1장 ~ 최대 2장) ──────────────────
+interface PhotoAttachModalProps {
+  itemLabel: string
+  result: InspectionResult
+  onSave: (images: CompressedImage[]) => void
+  onCancel: () => void
+}
+
+function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachModalProps) {
+  const [images, setImages] = useState<CompressedImage[]>(result.images ?? [])
+  const [isCompressing, setIsCompressing] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files ?? [])
+      if (!files.length) return
+      if (images.length >= 2) return
+
+      setIsCompressing(true)
+      try {
+        const remaining = 2 - images.length
+        const filesToProcess = files.slice(0, remaining)
+        const compressed = await Promise.all(filesToProcess.map(compressImage))
+        setImages((prev) => [...prev, ...compressed])
+      } finally {
+        setIsCompressing(false)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+      }
+    },
+    [images.length]
+  )
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const canSave = images.length >= 1
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
+    >
+      <div className="w-full max-w-md bg-white rounded-none px-5 pt-5 pb-8 shadow-2xl">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-3">
+          <div className="flex items-center gap-2">
+            <Camera size={20} className="text-[#1a3a52]" />
+            <span className="font-bold text-[#1a3a52] text-sm">필수 사진 첨부</span>
+          </div>
+          <button
+            onClick={onCancel}
+            className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100"
+            aria-label="닫기"
+          >
+            <XCircle size={18} className="text-gray-500" />
+          </button>
+        </div>
+
+        <p className="text-sm font-semibold text-gray-800 mb-4 leading-snug">{itemLabel}</p>
+
+        <label className="block text-xs font-semibold text-gray-600 mb-2">
+          사진 첨부 <span className="text-gray-400 font-normal">(최소 1장, 최대 2장 · 자동 압축)</span>
+        </label>
+        <div className="flex gap-3 mb-5">
+          {images.map((img, idx) => (
+            <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.dataUrl} alt={`첨부 사진 ${idx + 1}`} className="w-full h-full object-cover" />
+              <button
+                onClick={() => removeImage(idx)}
+                className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
+                aria-label="이미지 삭제"
+              >
+                <X size={12} className="text-white" />
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[9px] text-center py-0.5">
+                {formatFileSize(img.compressedSize)}
+              </div>
+            </div>
+          ))}
+
+          {images.length < 2 && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isCompressing}
+              className="w-24 h-24 rounded-none border-2 border-dashed border-gray-400 flex flex-col items-center justify-center gap-1 hover:bg-slate-50 transition-colors disabled:opacity-50 flex-shrink-0"
+            >
+              <Camera size={20} className="text-gray-600" />
+              <span className="text-xs text-gray-600">
+                {isCompressing ? '압축 중...' : '사진 추가'}
+              </span>
+            </button>
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {!canSave && (
+          <p className="text-xs text-red-600 mb-2">사진을 최소 1장 이상 첨부해야 합니다.</p>
+        )}
+
+        {/* 저장 버튼 */}
+        <button
+          onClick={() => canSave && onSave(images)}
+          disabled={!canSave}
+          className={`w-full h-12 text-white font-bold rounded-none text-sm transition-colors ${
+            canSave ? 'bg-[#1a3a52] hover:bg-[#0f2635]' : 'bg-gray-400 cursor-not-allowed'
+          }`}
+        >
+          저장
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── 메인 점검 화면 ─────────────────────────────────────────────
 export default function InspectionScreen({
   results,
@@ -266,18 +404,17 @@ export default function InspectionScreen({
 }: InspectionScreenProps) {
   const [activeTab, setActiveTab] = useState<CategoryKey>('vehicle')
   const [modalItemId, setModalItemId] = useState<string | null>(null)
+  const [photoModalItemId, setPhotoModalItemId] = useState<string | null>(null)
 
   const currentItems = CHECKLIST_ITEMS.filter((i) => i.categoryKey === activeTab)
 
   const getTabCompleted = (key: CategoryKey) => {
     const items = CHECKLIST_ITEMS.filter((i) => i.categoryKey === key)
-    return items.filter(
-      (i) => results[i.id]?.status === 'normal' || results[i.id]?.status === 'abnormal'
-    ).length
+    return items.filter((i) => isItemCompleted(i, results[i.id])).length
   }
 
   const totalCompleted = CHECKLIST_ITEMS.filter(
-    (i) => results[i.id]?.status === 'normal' || results[i.id]?.status === 'abnormal'
+    (i) => isItemCompleted(i, results[i.id])
   ).length
   const totalItems = CHECKLIST_ITEMS.length
   const progressPercent = Math.round((totalCompleted / totalItems) * 100)
@@ -287,8 +424,15 @@ export default function InspectionScreen({
       onUpdateResult(itemId, { status: 'abnormal' })
       setModalItemId(itemId)
     } else {
-      onUpdateResult(itemId, { status: 'normal', note: undefined, images: undefined })
+      // '정상' 선택 시 note는 초기화하되, 필수 사진은 유지되도록 images는 건드리지 않음
+      onUpdateResult(itemId, { status: 'normal', note: undefined })
     }
+  }
+
+  const handlePhotoSave = (images: CompressedImage[]) => {
+    if (!photoModalItemId) return
+    onUpdateResult(photoModalItemId, { images })
+    setPhotoModalItemId(null)
   }
 
   const handleModalSave = (note: string, images: CompressedImage[]) => {
@@ -311,6 +455,10 @@ export default function InspectionScreen({
 
   const modalItem = modalItemId
     ? CHECKLIST_ITEMS.find((i) => i.id === modalItemId)
+    : null
+
+  const photoModalItem = photoModalItemId
+    ? CHECKLIST_ITEMS.find((i) => i.id === photoModalItemId)
     : null
 
   return (
@@ -464,6 +612,28 @@ export default function InspectionScreen({
                   <p className="text-sm font-medium text-gray-800 leading-snug flex-1">
                     {item.label}
                   </p>
+
+                  {/* 필수 사진 항목: 우측 끝 사진기 아이콘 (미첨부=회색, 1장 이상 첨부=초록) */}
+                  {item.requiresPhoto && (
+                    <button
+                      onClick={() => setPhotoModalItemId(item.id)}
+                      className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 hover:bg-gray-50 transition-colors relative"
+                      aria-label="필수 사진 첨부"
+                      title="사진 첨부 (필수)"
+                    >
+                      <Camera
+                        size={20}
+                        className={
+                          (result?.images?.length ?? 0) > 0
+                            ? 'text-green-600'
+                            : 'text-gray-300'
+                        }
+                      />
+                      {(result?.images?.length ?? 0) === 0 && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* 버튼 영역 */}
@@ -564,6 +734,16 @@ export default function InspectionScreen({
           result={results[modalItem.id]}
           onSave={handleModalSave}
           onCancel={handleModalCancel}
+        />
+      )}
+
+      {/* 필수 사진 첨부 모달 */}
+      {photoModalItem && (
+        <PhotoAttachModal
+          itemLabel={photoModalItem.label}
+          result={results[photoModalItem.id]}
+          onSave={handlePhotoSave}
+          onCancel={() => setPhotoModalItemId(null)}
         />
       )}
     </div>

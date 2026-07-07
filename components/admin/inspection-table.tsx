@@ -80,11 +80,11 @@ function formatDateTime(iso: string): string {
 }
 
 // ─────────────────────────────────────────
-// 18개 항목 순서 (checklist-data 순서 그대로)
+// 15개 항목 순서 (checklist-data 순서 그대로)
 // ─────────────────────────────────────────
-const ORDERED_ITEMS = CHECKLIST_ITEMS // 이미 차량9 → 작업7 → 탱크2 순서
+const ORDERED_ITEMS = CHECKLIST_ITEMS // 이미 차량6 → 작업7 → 탱크2 순서
 
-// 카테고리별 컬럼 범위
+// 카테고리별 컬럼 범위 (항목 개수는 CHECKLIST_ITEMS 기준으로 동적 계산 → 컬럼/colSpan 자동 동기화)
 const VEHICLE_ITEMS = ORDERED_ITEMS.filter((i) => i.categoryKey === 'vehicle')
 const WORK_ITEMS    = ORDERED_ITEMS.filter((i) => i.categoryKey === 'work')
 const TANK_ITEMS    = ORDERED_ITEMS.filter((i) => i.categoryKey === 'tank')

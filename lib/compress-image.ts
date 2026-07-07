@@ -1,16 +1,26 @@
 import type { CompressedImage } from './checklist-data'
 
 /**
- * Canvas API를 활용해 이미지를 원본의 약 1/8 수준으로 압축·리사이징합니다.
+ * Canvas API를 활용해 이미지를 최대 0.5MB(500KB) 이하로 압축·리사이징합니다.
  *
  * 전략:
  *  - 최대 해상도를 1280px × 960px 로 제한 (일반 휴대폰 사진은 보통 4000px 이상)
- *  - JPEG quality 0.50 으로 추가 압축 (해상도↓ × 품질↓ = 약 1/8 용량 달성)
+ *  - JPEG quality를 0.5부터 시작해 0.5MB 이하가 될 때까지 단계적으로 낮춤
+ *  - 품질을 최소치까지 낮춰도 초과하면 해상도를 추가로 축소
  *  - crossOrigin="anonymous" 설정으로 CORS 오류 방지
  */
 const MAX_WIDTH = 1280
 const MAX_HEIGHT = 960
 const QUALITY = 0.5
+const TARGET_SIZE = 0.5 * 1024 * 1024 // 0.5MB = 512000 bytes
+const MIN_QUALITY = 0.3
+
+/** dataURL(base64)의 실제 바이트 용량을 근사 계산 */
+function estimateSize(dataUrl: string): number {
+  const commaIndex = dataUrl.indexOf(',')
+  const base64Length = dataUrl.length - (commaIndex + 1)
+  return Math.round((base64Length * 3) / 4)
+}
 
 export function compressImage(file: File): Promise<CompressedImage> {
   return new Promise((resolve, reject) => {
@@ -32,31 +42,41 @@ export function compressImage(file: File): Promise<CompressedImage> {
           height = Math.round(height * ratio)
         }
 
-        // ── Canvas에 그리고 압축 ──
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-
-        const ctx = canvas.getContext('2d')
-        if (!ctx) {
-          reject(new Error('Canvas context를 얻을 수 없습니다.'))
-          return
+        const renderToDataUrl = (w: number, h: number, quality: number): string => {
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')
+          if (!ctx) throw new Error('Canvas context를 얻을 수 없습니다.')
+          ctx.drawImage(img, 0, 0, w, h)
+          return canvas.toDataURL('image/jpeg', quality)
         }
 
-        ctx.drawImage(img, 0, 0, width, height)
+        try {
+          // ── 1) 품질을 낮춰가며 0.5MB 이하 목표 ──
+          let quality = QUALITY
+          let compressedDataUrl = renderToDataUrl(width, height, quality)
+          while (estimateSize(compressedDataUrl) > TARGET_SIZE && quality > MIN_QUALITY) {
+            quality = Math.max(MIN_QUALITY, quality - 0.1)
+            compressedDataUrl = renderToDataUrl(width, height, quality)
+          }
 
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', QUALITY)
+          // ── 2) 그래도 초과하면 해상도를 단계적으로 축소 ──
+          while (estimateSize(compressedDataUrl) > TARGET_SIZE && width > 320 && height > 240) {
+            width = Math.round(width * 0.85)
+            height = Math.round(height * 0.85)
+            compressedDataUrl = renderToDataUrl(width, height, quality)
+          }
 
-        // ── 용량 계산 (base64 → bytes 근사) ──
-        const base64Length = compressedDataUrl.length - 'data:image/jpeg;base64,'.length
-        const compressedSize = Math.round((base64Length * 3) / 4)
-
-        resolve({
-          dataUrl: compressedDataUrl,
-          fileName: file.name,
-          originalSize: file.size,
-          compressedSize,
-        })
+          resolve({
+            dataUrl: compressedDataUrl,
+            fileName: file.name,
+            originalSize: file.size,
+            compressedSize: estimateSize(compressedDataUrl),
+          })
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error('이미지 압축에 실패했습니다.'))
+        }
       }
 
       img.onerror = () => reject(new Error('이미지 로드에 실패했습니다.'))
