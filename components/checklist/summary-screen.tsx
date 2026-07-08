@@ -144,7 +144,7 @@ export default function SummaryScreen({
                           {isAbnormal ? (
                             <>
                               <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-none">
-                                이상
+                                {item.customLabels?.[1] ?? '이상'}
                               </span>
                               {hasDetail && (
                                 isExpanded
@@ -158,7 +158,7 @@ export default function SummaryScreen({
                             </span>
                           ) : (
                             <span className="text-xs font-bold text-green-800 bg-green-100 px-2 py-0.5 rounded-none">
-                              정상
+                              {item.customLabels?.[0] ?? '정상'}
                             </span>
                           )}
                         </div>

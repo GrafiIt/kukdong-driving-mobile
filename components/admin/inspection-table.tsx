@@ -249,7 +249,7 @@ export function InspectionTable() {
                   colSpan={WORK_ITEMS.length}
                   className="border-x border-slate-200 px-2 py-2 text-center text-xs font-bold text-emerald-700 bg-emerald-50 whitespace-nowrap"
                 >
-                  작업관련 ({WORK_ITEMS.length}항목)
+                  운전자 점검 ({WORK_ITEMS.length}항목)
                 </th>
                 {/* 탱크점검 그룹 */}
                 <th
@@ -372,19 +372,23 @@ export function InspectionTable() {
                         ? 'border-r-2 border-slate-300'
                         : 'border-r border-slate-200'
 
+                      // DB status값은 그대로 두고, 화면 표시 텍스트만 customLabels로 매핑
+                      const normalLabel = item.customLabels?.[0] ?? '정상'
+                      const abnormalLabel = item.customLabels?.[1] ?? '이상'
+
                       if (status === 'normal') {
-                        // 정상
+                        // 정상 계열 (준수 / 착용 / 설치 등)
                         return (
                           <td key={item.id} className={`${borderClass} px-2 py-2.5 text-center`}>
                             <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                              정상
+                              {normalLabel}
                             </span>
                           </td>
                         )
                       }
 
                       if (status === 'abnormal') {
-                        // 이상 (사유 + 사진 아이콘)
+                        // 이상 계열 (미준수 / 미착용 / 미설치 등) — 사유 + 사진 아이콘
                         const hasImages = images.length > 0
                         return (
                           <td key={item.id} className={`${borderClass} px-2 py-2.5 text-center`}>
@@ -401,7 +405,7 @@ export function InspectionTable() {
                               title={hasImages ? '사진 보기' : ''}
                             >
                               <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
-                                이상
+                                {abnormalLabel}
                                 {hasImages && <ImageIcon size={11} />}
                               </span>
                               {note && (
