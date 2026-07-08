@@ -10,6 +10,10 @@ export interface ChecklistItem {
   type: 'binary' | 'number' // binary: 정상/이상, number: 숫자 입력
   unit?: string // 숫자 입력일 때 단위 (예: "시간")
   requiresPhoto?: boolean // true면 사진 최소 1장 첨부해야 완료로 인정
+  // 화면 표시용 커스텀 라벨 (DB status값은 그대로 'normal'/'abnormal' 유지)
+  // 인덱스 0: status === 'normal'일 때 표시할 텍스트
+  // 인덱스 1: status === 'abnormal'일 때 표시할 텍스트
+  customLabels?: [string, string]
 }
 
 // 카테고리 메타 정보
@@ -46,7 +50,7 @@ export const CATEGORIES: Category[] = [
 ]
 
 // ────────────────────────────────────────
-// 15개 점검 항목 (차량 6 + 작업 7 + 탱크 2)
+// 12개 점검 항목 (차량 6 + 운전자 점검 4 + 탱크 2)
 // ────────────────────────────────────────
 export const CHECKLIST_ITEMS: ChecklistItem[] = [
   // ── 차량점검 (6항목) ──
@@ -99,56 +103,42 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
     requiresPhoto: true,
   },
 
-  // ── 작업관련 (7항목) ──
+  // ── 운전자 점검 (4항목) ──
   {
     id: 'w1',
     categoryKey: 'work',
     order: 1,
-    label: '개인 보호 장비(PPE) 소지 유무 및 상태 확인',
+    label: '작업 절차 준수',
     type: 'binary',
+    requiresPhoto: false,
+    customLabels: ['준수', '미준수'],
   },
   {
     id: 'w2',
     categoryKey: 'work',
     order: 2,
-    label: 'HOSE (연결 부위 및 파손) 상태 확인',
+    label: 'PPE 착용 상태',
     type: 'binary',
+    requiresPhoto: true,
+    customLabels: ['착용', '미착용'],
   },
   {
     id: 'w3',
     categoryKey: 'work',
     order: 3,
-    label: '차량 고임목 소지 유무 및 상태 확인',
+    label: '휴대폰 사용 금지',
     type: 'binary',
+    requiresPhoto: false,
+    customLabels: ['준수', '미준수'],
   },
   {
     id: 'w4',
     categoryKey: 'work',
     order: 4,
-    label: '핸드레일 점검 및 상태 확인',
+    label: '고임목 확인',
     type: 'binary',
-  },
-  {
-    id: 'w5',
-    categoryKey: 'work',
-    order: 5,
-    label: '고소 작업 안전벨트 소지 유무 및 상태 확인',
-    type: 'binary',
-  },
-  {
-    id: 'w6',
-    categoryKey: 'work',
-    order: 6,
-    label: '운행 전 차량 주위 360도 위험 요소 확인',
-    type: 'binary',
-  },
-  {
-    id: 'w7',
-    categoryKey: 'work',
-    order: 7,
-    label: '수면 시간',
-    type: 'number',
-    unit: '시간',
+    requiresPhoto: true,
+    customLabels: ['설치', '미설치'],
   },
 
   // ── 탱크점검 (2항목) ──

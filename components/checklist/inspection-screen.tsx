@@ -648,7 +648,7 @@ export default function InspectionScreen({
                             : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
                         }`}
                       >
-                        정상
+                        {item.customLabels?.[0] ?? '정상'}
                       </button>
                       <button
                         onClick={() => handleStatusClick(item.id, 'abnormal')}
@@ -658,7 +658,7 @@ export default function InspectionScreen({
                             : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'
                         }`}
                       >
-                        이상
+                        {item.customLabels?.[1] ?? '이상'}
                       </button>
                     </div>
                   ) : (

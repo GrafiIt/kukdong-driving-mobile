@@ -4,16 +4,16 @@ import type { CompressedImage } from './checklist-data'
  * Canvas API를 활용해 이미지를 최대 0.5MB(500KB) 이하로 압축·리사이징합니다.
  *
  * 전략:
- *  - 최대 해상도를 1280px × 960px 로 제한 (일반 휴대폰 사진은 보통 4000px 이상)
- *  - JPEG quality를 0.5부터 시작해 0.5MB 이하가 될 때까지 단계적으로 낮춤
+ *  - 최대 해상도를 1024px × 768px 로 제한 (일반 휴대폰 사진은 보통 4000px 이상)
+ *  - JPEG quality를 0.45부터 시작해 0.5MB 이하가 될 때까지 단계적으로 낮춤
  *  - 품질을 최소치까지 낮춰도 초과하면 해상도를 추가로 축소
  *  - crossOrigin="anonymous" 설정으로 CORS 오류 방지
  */
-const MAX_WIDTH = 1280
-const MAX_HEIGHT = 960
-const QUALITY = 0.5
+const MAX_WIDTH = 1024
+const MAX_HEIGHT = 768
+const QUALITY = 0.45
 const TARGET_SIZE = 0.5 * 1024 * 1024 // 0.5MB = 512000 bytes
-const MIN_QUALITY = 0.3
+const MIN_QUALITY = 0.25
 
 /** dataURL(base64)의 실제 바이트 용량을 근사 계산 */
 function estimateSize(dataUrl: string): number {
