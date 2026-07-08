@@ -78,7 +78,7 @@ export function AdminSidebar({ active, onSelect, isCollapsed, onToggleCollapse }
 
       {!isCollapsed && (
         <div className="border-t border-slate-800 p-4">
-          <p className="text-center text-xs text-slate-500">휴먼과드라이빙 관리자</p>
+          <p className="text-center text-xs text-slate-500">극동로지텍 관리자</p>
         </div>
       )}
     </aside>
