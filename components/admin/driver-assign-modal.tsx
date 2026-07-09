@@ -14,7 +14,12 @@ interface DriverUser {
   user_name: string
 }
 
-const USERS_ENDPOINT = 'https://payment.1004.help/api/v1/users'
+// TODO: 백엔드 구현 완료 후 아래 임시 데이터를 제거하고 API fetch로 교체
+const MOCK_DRIVERS: DriverUser[] = [
+  { user_id: 'test_driver_001', user_name: '김기사' },
+  { user_id: 'test_driver_002', user_name: '이운전' },
+  { user_id: 'test_driver_003', user_name: '박물류' },
+]
 
 interface DriverAssignModalProps {
   vehicle: VehicleRow
@@ -44,23 +49,9 @@ export function DriverAssignModal({
     window.addEventListener('keydown', handleKey)
     document.body.style.overflow = 'hidden'
 
-    const loadDrivers = async () => {
-      setLoading(true)
-      setLoadError(null)
-      try {
-        const res = await fetch(USERS_ENDPOINT)
-        if (!res.ok) throw new Error(`요청 실패 (HTTP ${res.status})`)
-        const json = (await res.json()) as { users?: DriverUser[] }
-        setDrivers(Array.isArray(json.users) ? json.users : [])
-      } catch (err) {
-        setLoadError(
-          err instanceof Error ? err.message : '기사 목록을 불러오지 못했습니다.',
-        )
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadDrivers()
+    // 임시 Mock 데이터 즉시 세팅 (백엔드 API 구현 후 fetch로 교체 예정)
+    setDrivers(MOCK_DRIVERS)
+    setLoading(false)
 
     return () => {
       window.removeEventListener('keydown', handleKey)
