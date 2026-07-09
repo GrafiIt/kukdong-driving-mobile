@@ -2,12 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import useSWR from 'swr'
-import { RefreshCw, ImageIcon, Search, Pencil, Home } from 'lucide-react'
+import { RefreshCw, ImageIcon, Search, Pencil, Home, MessageSquare, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { CHECKLIST_ITEMS } from '@/lib/checklist-data'
 import { PhotoModal } from '@/components/admin/photo-modal'
 import { AdminNoteModal } from '@/components/admin/admin-note-modal'
+import { AdminEditModal } from '@/components/admin/admin-edit-modal'
 
 // ─────────────────────────────────────────
 // 타입
@@ -116,6 +117,8 @@ export function InspectionTable() {
 
   const [modal, setModal] = useState<ModalState | null>(null)
   const [noteModal, setNoteModal] = useState<NoteModalState | null>(null)
+  const [editRow, setEditRow] = useState<InspectionRow | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // SWR key에 날짜를 포함시켜 날짜 변경 시 자동 refetch
   const swrKey = `admin-inspections/${appliedFrom}/${appliedTo}`
@@ -131,6 +134,40 @@ export function InspectionTable() {
   const handleSearch = () => {
     setAppliedFrom(fromDate)
     setAppliedTo(toDate)
+  }
+
+  // 점검 기록 삭제 (자식 → 부모 순서)
+  const handleDelete = async (rowId: string) => {
+    if (!window.confirm('해당 점검 기록을 완전히 삭제하시겠습니까?')) return
+
+    setDeletingId(rowId)
+    try {
+      const supabase = createClient()
+
+      // 1) 자식 테이블(점검 항목) 먼저 삭제
+      const { error: itemsError } = await supabase
+        .schema('driver-checklist')
+        .from('kukdong_driver_inspection_items')
+        .delete()
+        .eq('inspection_id', rowId)
+
+      if (itemsError) throw new Error(itemsError.message)
+
+      // 2) 부모 테이블(점검 마스터) 삭제
+      const { error: parentError } = await supabase
+        .schema('driver-checklist')
+        .from('kukdong_driver_inspections')
+        .delete()
+        .eq('id', rowId)
+
+      if (parentError) throw new Error(parentError.message)
+
+      await mutate()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '삭제 중 오류가 발생했습니다.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -288,9 +325,9 @@ export function InspectionTable() {
                     </th>
                   )
                 })}
-                {/* 비고 헤더 */}
-                <th className="border-l border-slate-200 bg-slate-50 px-3 py-2 text-center text-[11px] font-semibold text-slate-600 min-w-[160px]">
-                  비고
+                {/* 관리(비고/수정/삭제) 헤더 */}
+                <th className="border-l border-slate-200 bg-slate-50 px-3 py-2 text-center text-[11px] font-semibold text-slate-600 min-w-[150px]">
+                  비고 / 수정 / 삭제
                 </th>
               </tr>
             </thead>
@@ -466,24 +503,48 @@ export function InspectionTable() {
                       )
                     })}
 
-                    {/* 비고 셀 */}
-                    <td className="border-l border-slate-200 px-3 py-2.5 min-w-[160px]">
-                      <button
-                        onClick={() => setNoteModal({ rowId: row.id, initialNote: row.admin_note ?? null })}
-                        className="group/note flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-slate-100"
-                        title={row.admin_note ? '비고 수정' : '비고 입력'}
-                      >
-                        {row.admin_note ? (
-                          <>
-                            <span className="flex-1 truncate text-[12px] text-slate-700 leading-relaxed" title={row.admin_note}>
-                              {row.admin_note}
-                            </span>
-                            <Pencil size={12} className="shrink-0 text-slate-400 opacity-60 group-hover/note:opacity-100 transition-opacity" />
-                          </>
-                        ) : (
-                          <Pencil size={15} className="mx-auto text-slate-300 group-hover/note:text-slate-500 transition-colors" />
-                        )}
-                      </button>
+                    {/* 관리 셀 (비고 / 수정 / 삭제) */}
+                    <td className="border-l border-slate-200 px-3 py-2.5 min-w-[150px]">
+                      <div className="flex items-center justify-center gap-1">
+                        {/* 비고 (말풍선) */}
+                        <button
+                          onClick={() => setNoteModal({ rowId: row.id, initialNote: row.admin_note ?? null })}
+                          className={`relative inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                            row.admin_note
+                              ? 'text-[#1e3a5f] hover:bg-slate-100'
+                              : 'text-slate-300 hover:bg-slate-100 hover:text-slate-500'
+                          }`}
+                          title={row.admin_note ? `비고: ${row.admin_note}` : '비고 입력'}
+                        >
+                          <MessageSquare size={16} />
+                          {row.admin_note && (
+                            <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#1e3a5f]" />
+                          )}
+                        </button>
+
+                        {/* 수정 (연필) */}
+                        <button
+                          onClick={() => setEditRow(row)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                          title="점검 내역 수정"
+                        >
+                          <Pencil size={16} />
+                        </button>
+
+                        {/* 삭제 (휴지통) */}
+                        <button
+                          onClick={() => handleDelete(row.id)}
+                          disabled={deletingId === row.id}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                          title="점검 기록 삭제"
+                        >
+                          {deletingId === row.id ? (
+                            <RefreshCw size={16} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -508,6 +569,15 @@ export function InspectionTable() {
           rowId={noteModal.rowId}
           initialNote={noteModal.initialNote}
           onClose={() => setNoteModal(null)}
+          onSaved={() => mutate()}
+        />
+      )}
+
+      {/* 점검 내역 수정 모달 */}
+      {editRow && (
+        <AdminEditModal
+          row={editRow}
+          onClose={() => setEditRow(null)}
           onSaved={() => mutate()}
         />
       )}
