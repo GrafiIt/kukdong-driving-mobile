@@ -256,7 +256,7 @@ export function InspectionTable() {
                   colSpan={TANK_ITEMS.length}
                   className="border-l border-slate-200 px-2 py-2 text-center text-xs font-bold text-orange-700 bg-orange-50 whitespace-nowrap"
                 >
-                  탱크점검 ({TANK_ITEMS.length}항목)
+                  비고 및 서명 ({TANK_ITEMS.length}항목)
                 </th>
                 {/* 관리자 그룹 */}
                 <th
@@ -375,6 +375,30 @@ export function InspectionTable() {
                       // DB status값은 그대로 두고, 화면 표시 텍스트만 customLabels로 매핑
                       const normalLabel = item.customLabels?.[0] ?? '정상'
                       const abnormalLabel = item.customLabels?.[1] ?? '이상'
+
+                      // 서명 항목: image_urls의 서명 이미지를 작은 썸네일로 직접 렌더링
+                      if (item.type === 'signature') {
+                        return (
+                          <td key={item.id} className={`${borderClass} px-2 py-2.5 text-center`}>
+                            {images.length > 0 ? (
+                              <button
+                                onClick={() => setModal({ images, title: `${item.order}. ${item.label}` })}
+                                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-0.5 transition-colors hover:bg-slate-50"
+                                title="서명 크게 보기"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={images[0]}
+                                  alt="서명"
+                                  className="h-10 w-20 object-contain"
+                                />
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-slate-300">-</span>
+                            )}
+                          </td>
+                        )
+                      }
 
                       if (status === 'normal') {
                         // 정상 계열 (준수 / 착용 / 설치 등)

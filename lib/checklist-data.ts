@@ -7,7 +7,7 @@ export interface ChecklistItem {
   categoryKey: CategoryKey
   order: number
   label: string
-  type: 'binary' | 'number' // binary: 정상/이상, number: 숫자 입력
+  type: 'binary' | 'number' | 'signature' // binary: 정상/이상, number: 숫자 입력, signature: 서명 패드
   unit?: string // 숫자 입력일 때 단위 (예: "시간")
   requiresPhoto?: boolean // true면 사진 최소 1장 첨부해야 완료로 인정
   // 화면 표시용 커스텀 라벨 (DB status값은 그대로 'normal'/'abnormal' 유지)
@@ -141,20 +141,22 @@ export const CHECKLIST_ITEMS: ChecklistItem[] = [
     customLabels: ['설치', '미설치'],
   },
 
-  // ── 탱크점검 (2항목) ──
+  // ── 비고 및 서명 (2항목) ──
   {
     id: 't1',
     categoryKey: 'tank',
     order: 1,
-    label: '유창 칸 벨브 작동 유무 상태 확인',
+    label: '비고(기타 특이사항)',
     type: 'binary',
+    customLabels: ['없음', '있음'],
+    requiresPhoto: false,
   },
   {
     id: 't2',
     categoryKey: 'tank',
     order: 2,
-    label: '유창 칸 내 잔유 유무 확인',
-    type: 'binary',
+    label: '서명',
+    type: 'signature',
   },
 ]
 
