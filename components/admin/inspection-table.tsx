@@ -402,11 +402,27 @@ export function InspectionTable() {
 
                       if (status === 'normal') {
                         // 정상 계열 (준수 / 착용 / 설치 등)
+                        const hasImages = images.length > 0
                         return (
                           <td key={item.id} className={`${borderClass} px-2 py-2.5 text-center`}>
-                            <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                              {normalLabel}
-                            </span>
+                            {hasImages ? (
+                              <button
+                                onClick={() =>
+                                  setModal({ images, title: `${item.order}. ${item.label}` })
+                                }
+                                className="inline-flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 transition-colors cursor-pointer hover:bg-emerald-50"
+                                title="사진 보기"
+                              >
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                  {normalLabel}
+                                  <ImageIcon size={11} />
+                                </span>
+                              </button>
+                            ) : (
+                              <span className="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                {normalLabel}
+                              </span>
+                            )}
                           </td>
                         )
                       }
