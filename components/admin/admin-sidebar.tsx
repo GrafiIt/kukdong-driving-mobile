@@ -1,8 +1,8 @@
 'use client'
 
-import { ClipboardCheck, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import { Car, ClipboardCheck, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 
-export type AdminMenuKey = 'checklist'
+export type AdminMenuKey = 'checklist' | 'vehicles'
 
 interface AdminMenuItem {
   key: AdminMenuKey
@@ -13,6 +13,7 @@ interface AdminMenuItem {
 // 추후 메뉴 확장을 위해 배열로 관리
 const MENU_ITEMS: AdminMenuItem[] = [
   { key: 'checklist', label: '일일점검 체크리스트', icon: ClipboardCheck },
+  { key: 'vehicles', label: '차량 및 기사 관리', icon: Car },
 ]
 
 interface AdminSidebarProps {

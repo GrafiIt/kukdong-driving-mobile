@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { AdminSidebar, type AdminMenuKey } from '@/components/admin/admin-sidebar'
 import { InspectionTable } from '@/components/admin/inspection-table'
+import { VehicleManagement } from '@/components/admin/vehicle-management'
 import { createClient } from '@/utils/supabase/client'
 
 const ADMIN_LOGIN_URL =
@@ -66,6 +67,7 @@ export default function AdminPage() {
         {/* 콘텐츠 */}
         <div className="flex-1 overflow-y-auto p-8">
           {activeMenu === 'checklist' && <InspectionTable />}
+          {activeMenu === 'vehicles' && <VehicleManagement />}
         </div>
       </main>
     </div>
