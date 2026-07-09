@@ -152,6 +152,19 @@ export default function SummaryScreen({
                                   : <ChevronDown size={14} className="text-gray-500" />
                               )}
                             </>
+                          ) : item.type === 'signature' ? (
+                            result?.images && result.images.length > 0 ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={result.images[0].dataUrl}
+                                alt="서명"
+                                className="h-12 w-24 object-contain rounded-none border border-gray-200 bg-white"
+                              />
+                            ) : (
+                              <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-none">
+                                미서명
+                              </span>
+                            )
                           ) : item.type === 'number' ? (
                             <span className="text-xs font-bold text-[#1a3a52]">
                               {result?.numberValue ?? '-'} {item.unit}

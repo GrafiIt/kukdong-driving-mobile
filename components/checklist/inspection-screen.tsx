@@ -261,12 +261,159 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
 // ── 완료 판정 헬퍼 ─────────────────────────────────────────────
 // requiresPhoto 항목은 정상/이상 선택 + 사진 최소 1장이 모두 충족되어야 완료로 인정
 function isItemCompleted(item: ChecklistItem, result?: InspectionResult): boolean {
+  // 서명 항목: 서명 이미지가 1장 이상 저장되어 있으면 완료
+  if (item.type === 'signature') {
+    return (result?.images?.length ?? 0) >= 1
+  }
   const statusDone = result?.status === 'normal' || result?.status === 'abnormal'
   if (!statusDone) return false
   if (item.requiresPhoto) {
     return (result?.images?.length ?? 0) >= 1
   }
   return true
+}
+
+// ── 서명 패드 (HTML5 Canvas) ───────────────────────────────────
+interface SignaturePadProps {
+  itemId: string
+  savedImage?: CompressedImage
+  onSave: (image: CompressedImage) => void
+  onClear: () => void
+}
+
+function SignaturePad({ itemId, savedImage, onSave, onClear }: SignaturePadProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const isDrawing = useRef(false)
+  const lastPoint = useRef<{ x: number; y: number } | null>(null)
+  const [hasStroke, setHasStroke] = useState(false)
+  // 저장된 서명이 있으면 편집 모드가 아닌 '저장됨' 상태로 시작
+  const [isEditing, setIsEditing] = useState(!savedImage)
+
+  // 캔버스 초기 설정 (고해상도 대응)
+  useEffect(() => {
+    if (!isEditing) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ratio = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width * ratio
+    canvas.height = rect.height * ratio
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.scale(ratio, ratio)
+    ctx.lineWidth = 2.5
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = '#1a3a52'
+  }, [isEditing])
+
+  // 좌표 계산 (마우스 / 터치 공통)
+  const getPos = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const rect = canvas.getBoundingClientRect()
+    const point = 'touches' in e ? e.touches[0] ?? e.changedTouches[0] : e
+    return { x: point.clientX - rect.left, y: point.clientY - rect.top }
+  }
+
+  const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault()
+    isDrawing.current = true
+    lastPoint.current = getPos(e)
+  }
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing.current) return
+    e.preventDefault()
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!ctx || !lastPoint.current) return
+    const pos = getPos(e)
+    ctx.beginPath()
+    ctx.moveTo(lastPoint.current.x, lastPoint.current.y)
+    ctx.lineTo(pos.x, pos.y)
+    ctx.stroke()
+    lastPoint.current = pos
+    if (!hasStroke) setHasStroke(true)
+  }
+
+  const endDraw = () => {
+    isDrawing.current = false
+    lastPoint.current = null
+  }
+
+  const handleClear = () => {
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext('2d')
+    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
+    setHasStroke(false)
+    onClear()
+  }
+
+  const handleSave = () => {
+    const canvas = canvasRef.current
+    if (!canvas || !hasStroke) return
+    const dataUrl = canvas.toDataURL('image/png')
+    const size = Math.round((dataUrl.length * 3) / 4)
+    onSave({
+      dataUrl,
+      fileName: `signature-${itemId}.png`,
+      originalSize: size,
+      compressedSize: size,
+    })
+    setIsEditing(false)
+  }
+
+  // 저장 완료 상태: 서명 이미지 미리보기 + 다시 서명 버튼
+  if (!isEditing && savedImage) {
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="rounded-none border border-gray-300 bg-white p-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={savedImage.dataUrl} alt="저장된 서명" className="w-full h-40 object-contain" />
+        </div>
+        <button
+          onClick={() => { setHasStroke(false); setIsEditing(true) }}
+          className="w-full h-11 rounded-none border border-gray-300 bg-gray-50 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-colors"
+        >
+          다시 서명하기
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <canvas
+        ref={canvasRef}
+        className="w-full h-40 rounded-none border-2 border-dashed border-gray-400 bg-white touch-none cursor-crosshair"
+        onMouseDown={startDraw}
+        onMouseMove={draw}
+        onMouseUp={endDraw}
+        onMouseLeave={endDraw}
+        onTouchStart={startDraw}
+        onTouchMove={draw}
+        onTouchEnd={endDraw}
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={handleClear}
+          className="flex-1 h-11 rounded-none border border-gray-300 bg-gray-50 text-gray-700 font-bold text-sm hover:bg-gray-100 transition-colors"
+        >
+          지우기(초기화)
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!hasStroke}
+          className={`flex-1 h-11 rounded-none font-bold text-sm text-white transition-colors ${
+            hasStroke ? 'bg-[#1a3a52] hover:bg-[#0f2635]' : 'bg-gray-400 cursor-not-allowed'
+          }`}
+        >
+          서명 저장
+        </button>
+      </div>
+    </div>
+  )
 }
 
 // ── 필수 사진 첨부 모달 (최소 1장 ~ 최대 2장) ──────────────────
@@ -433,6 +580,16 @@ export default function InspectionScreen({
     if (!photoModalItemId) return
     onUpdateResult(photoModalItemId, { images })
     setPhotoModalItemId(null)
+  }
+
+  // 서명 저장: base64 이미지를 images 배열에 담고 status를 normal로 처리 → 완료 인식
+  const handleSignatureSave = (itemId: string, image: CompressedImage) => {
+    onUpdateResult(itemId, { status: 'normal', images: [image] })
+  }
+
+  // 서명 초기화: 이미지 제거 + pending으로 되돌림
+  const handleSignatureClear = (itemId: string) => {
+    onUpdateResult(itemId, { status: 'pending', images: [] })
   }
 
   const handleModalSave = (note: string, images: CompressedImage[]) => {
@@ -661,6 +818,14 @@ export default function InspectionScreen({
                         {item.customLabels?.[1] ?? '이상'}
                       </button>
                     </div>
+                  ) : item.type === 'signature' ? (
+                    // 서명 패드 (Canvas)
+                    <SignaturePad
+                      itemId={item.id}
+                      savedImage={result?.images?.[0]}
+                      onSave={(image) => handleSignatureSave(item.id, image)}
+                      onClear={() => handleSignatureClear(item.id)}
+                    />
                   ) : (
                     // 수면 시간 — iOS 스타일 휠 픽커
                     <div className="flex items-center gap-3 px-1">
