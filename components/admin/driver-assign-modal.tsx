@@ -14,12 +14,7 @@ interface DriverUser {
   user_name: string
 }
 
-// TODO: 백엔드 구현 완료 후 아래 임시 데이터를 제거하고 API fetch로 교체
-const MOCK_DRIVERS: DriverUser[] = [
-  { user_id: 'test_driver_001', user_name: '김기사' },
-  { user_id: 'test_driver_002', user_name: '이운전' },
-  { user_id: 'test_driver_003', user_name: '박물류' },
-]
+const USERS_ENDPOINT = 'https://payment.1004.help/api/v1/users?company=kukdong'
 
 interface DriverAssignModalProps {
   vehicle: VehicleRow
@@ -35,6 +30,7 @@ export function DriverAssignModal({
   const [drivers, setDrivers] = useState<DriverUser[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [debugLog, setDebugLog] = useState<string>('')
   const [keyword, setKeyword] = useState('')
 
   // 배정 처리 중인 user_id (버튼 개별 로딩 표시용)
@@ -49,9 +45,29 @@ export function DriverAssignModal({
     window.addEventListener('keydown', handleKey)
     document.body.style.overflow = 'hidden'
 
-    // 임시 Mock 데이터 즉시 세팅 (백엔드 API 구현 후 fetch로 교체 예정)
-    setDrivers(MOCK_DRIVERS)
-    setLoading(false)
+    const loadDrivers = async () => {
+      setLoading(true)
+      setLoadError(null)
+      setDebugLog('')
+      try {
+        const res = await fetch(USERS_ENDPOINT)
+        const rawText = await res.text()
+        setDebugLog(`[HTTP ${res.status}]\n${rawText}`)
+        try {
+          const json = JSON.parse(rawText) as { users?: DriverUser[] }
+          setDrivers(Array.isArray(json.users) ? json.users : [])
+        } catch (parseErr) {
+          setLoadError('JSON 파싱 실패 — 하단 디버그 로그를 확인해 주세요.')
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '알 수 없는 네트워크 오류'
+        setLoadError(msg)
+        setDebugLog(`[FETCH ERROR]\n${msg}`)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadDrivers()
 
     return () => {
       window.removeEventListener('keydown', handleKey)
@@ -141,6 +157,18 @@ export function DriverAssignModal({
         {/* 배정 에러 */}
         {assignError && (
           <p className="px-6 pt-2 text-xs text-red-500">{assignError}</p>
+        )}
+
+        {/* API 디버그 로그 뷰어 */}
+        {debugLog !== '' && (
+          <div className="mx-6 mt-4 rounded-xl bg-slate-900 px-4 py-3">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              API Debug Log
+            </p>
+            <pre className="max-h-36 overflow-y-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-green-400">
+              {debugLog}
+            </pre>
+          </div>
         )}
 
         {/* 목록 */}
