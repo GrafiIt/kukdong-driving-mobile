@@ -12,6 +12,7 @@ import type { VehicleRow } from '@/components/admin/vehicle-management'
 interface DriverUser {
   user_id: string
   user_name: string
+  user_email: string
 }
 
 const USERS_ENDPOINT = 'https://payment.1004.help/api/v1/users?company=kukdong'
@@ -195,7 +196,7 @@ export function DriverAssignModal({
                           {driver.user_name}
                         </span>
                         <span className="text-xs text-slate-400">
-                          ID: {driver.user_id}
+                          Email: {driver.user_email}
                         </span>
                       </span>
                       {isAssigning ? (
