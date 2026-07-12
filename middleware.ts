@@ -68,6 +68,12 @@ export async function middleware(request: NextRequest) {
   const verifyUrl = `https://payment.1004.help/api/v1/verify-permission?program_id=${PROGRAM_ID}&_t=${Date.now()}`
   const pathname = request.nextUrl.pathname
 
+  // API 라우트(`/api/`) 요청 여부.
+  // API 요청에 대해서는 차단 시 HTML 로그인 페이지로 redirect 하면
+  // 프론트엔드 fetch 에서 CORS / JSON 파싱 에러가 발생하므로,
+  // redirect 대신 JSON 401 응답을 반환해야 한다.
+  const isApiRequest = pathname.startsWith("/api/")
+
   // request.cookies.getAll() 로 재조합 → 에지 리다이렉트 시 쿠키 누락 방지
   const cookieHeader = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join("; ")
 
@@ -101,6 +107,11 @@ export async function middleware(request: NextRequest) {
 
   // ── 케이스 A: 미인증 처리 ─────────────────────────────────
   if (!verifyData.authenticated || !verifyData.user) {
+    // API 요청이면 HTML 로그인 페이지 대신 JSON 401 반환
+    if (isApiRequest) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "")
     const host = request.headers.get("host") ?? request.nextUrl.host
     const currentUrl = `${proto}://${host}${pathname}${request.nextUrl.search}`
@@ -134,6 +145,10 @@ export async function middleware(request: NextRequest) {
       isExpired,
       verifyData: JSON.stringify(verifyData),
     })
+    // API 요청이면 구독 관리 페이지로 redirect 하지 않고 JSON 401 반환
+    if (isApiRequest) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     // next 파라미터를 절대로 붙이지 않는다.
     // next 를 붙이면 payment 사이트가 다시 이쪽으로 튕겨내어 무한 루프가 발생한다.
     return NextResponse.redirect(SUBSCRIPTION_URL)
@@ -159,12 +174,15 @@ export const config = {
   matcher: [
     /*
      * 아래 경로를 제외한 모든 요청에 매칭:
-     * - api (API 라우트)
+     * - api (API 라우트) → 단, `/api/v1/users/me` 는 예외적으로 미들웨어를 태워
+     *   X-User-Level 헤더를 주입받아야 하므로 매칭 대상에 포함시킨다.
+     *   (부정 룩어헤드 `api(?!/v1/users/me)`: api 로 시작하되 /v1/users/me 가
+     *    뒤따르지 않는 경로만 제외 → 결제 허브 등 외부 API 충돌 방지)
      * - _next/static (정적 파일)
      * - _next/image (이미지 최적화 파일)
      * - favicon.ico, 정적 이미지 (svg, png, jpg 등)
      * - manifest.json, sw.js (PWA 관련 파일)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|debug|manifest.json|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api(?!/v1/users/me)|_next/static|_next/image|favicon.ico|debug|manifest.json|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 }
