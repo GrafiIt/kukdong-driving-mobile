@@ -1,6 +1,6 @@
 {
-  "name": "휴먼과드라이빙",
-  "short_name": "휴먼과드라이빙",
+  "name": "극동운전자앱",
+  "short_name": "극동운전자앱",
   "description": "운전자 운행 관리 및 일일점검 시스템",
   "start_url": "/",
   "display": "standalone",
