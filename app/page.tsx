@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { Loader } from 'lucide-react'
 import { createInitialResults, type InspectionResult, type CompressedImage } from '@/lib/checklist-data'
 import { dataUrlToBlob } from '@/lib/compress-image'
 import { createClient } from '@/utils/supabase/client'
@@ -10,15 +11,99 @@ import SummaryScreen from '@/components/checklist/summary-screen'
 
 type Step = 'start' | 'inspection' | 'summary'
 
-const DRIVER_NAME = '이윤상'
-const VEHICLE_NUMBER = '부산 99바 1234'
-
 export default function HomePage() {
   const [step, setStep] = useState<Step>('start')
   const [results, setResults] = useState<Record<string, InspectionResult>>(createInitialResults)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isLoadingEdit, setIsLoadingEdit] = useState(false)
+
+  // ── 사용자/차량 매칭 상태 ──
+  const [driverName, setDriverName] = useState('')
+  const [vehicleNumber, setVehicleNumber] = useState('')
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  // ── 마운트 시 세션·권한·차량 매칭 검증 ──
+  useEffect(() => {
+    let cancelled = false
+
+    const init = async () => {
+      try {
+        const supabase = createClient()
+
+        // 1) 현재 세션 유저
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          // 세션이 없으면 미들웨어가 로그인으로 보내주므로 대기 상태 유지
+          return
+        }
+
+        // 2) 사용자 등급 조회
+        let userLevel: number | null = null
+        try {
+          const res = await fetch('/api/v1/users/me?company=kukdong')
+          if (res.ok) {
+            const json = await res.json()
+            userLevel = typeof json.user_level === 'number' ? json.user_level : Number(json.user_level)
+          }
+        } catch {
+          // 등급 조회 실패는 일반 사용자로 간주
+        }
+
+        // 3) 차량 매칭 조회 (driver_id 가 유저 id 또는 이메일과 일치)
+        const orFilters = [`driver_id.eq.${user.id}`]
+        if (user.email) orFilters.push(`driver_id.eq.${user.email}`)
+
+        const { data: vehicle } = await supabase
+          .schema('driver-checklist')
+          .from('kukdong_vehicles')
+          .select('driver_name, vehicle_number')
+          .or(orFilters.join(','))
+          .limit(1)
+          .maybeSingle()
+
+        if (cancelled) return
+
+        const fallbackName =
+          (user.user_metadata?.name as string | undefined) ??
+          (user.user_metadata?.full_name as string | undefined) ??
+          user.email ??
+          '사용자'
+
+        // ── 핵심 로직 분기 ──
+        if (userLevel === 1) {
+          // 관리자: 매칭 없어도 무조건 통과
+          setDriverName(vehicle?.driver_name ?? fallbackName)
+          setVehicleNumber('관리자')
+          setIsInitializing(false)
+          return
+        }
+
+        if (!vehicle) {
+          // 일반 사용자 & 매칭 차량 없음 → 안내 페이지로 이동
+          window.location.href = '/unassigned'
+          return
+        }
+
+        // 차량 정상 매칭
+        setDriverName(vehicle.driver_name ?? fallbackName)
+        setVehicleNumber(vehicle.vehicle_number)
+        setIsInitializing(false)
+      } catch (err) {
+        console.error('[checklist] 초기화 검증 오류:', err)
+        if (!cancelled) window.location.href = '/unassigned'
+      }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // ── 단일 항목 결과 업데이트 ──
   const handleUpdateResult = useCallback(
@@ -102,8 +187,8 @@ export default function HomePage() {
           .schema('driver-checklist')
           .from('kukdong_driver_inspections')
           .update({
-            driver_name: DRIVER_NAME,
-            vehicle_number: VEHICLE_NUMBER,
+            driver_name: driverName,
+            vehicle_number: vehicleNumber,
             inspected_at: new Date().toISOString(),
           })
           .eq('id', inspectionId)
@@ -126,8 +211,8 @@ export default function HomePage() {
           .schema('driver-checklist')
           .from('kukdong_driver_inspections')
           .insert({
-            driver_name: DRIVER_NAME,
-            vehicle_number: VEHICLE_NUMBER,
+            driver_name: driverName,
+            vehicle_number: vehicleNumber,
             inspected_at: new Date().toISOString(),
           })
           .select('id')
@@ -203,11 +288,23 @@ export default function HomePage() {
     }
   }
 
+  // ── 초기화(검증) 중: 로딩 스피너 ──
+  if (isInitializing) {
+    return (
+      <div className="w-full min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+        <Loader size={40} className="animate-spin text-[#ff6b35]" />
+        <p className="text-sm font-medium text-gray-600">사용자 정보를 확인하는 중입니다...</p>
+      </div>
+    )
+  }
+
   // ── 화면 렌더링 ──
   if (step === 'start') {
     return (
       <StartScreen
         results={results}
+        driverName={driverName}
+        vehicleNumber={vehicleNumber}
         onStart={handleStart}
         onEdit={handleEdit}
         isLoadingEdit={isLoadingEdit}
@@ -219,6 +316,8 @@ export default function HomePage() {
     return (
       <InspectionScreen
         results={results}
+        driverName={driverName}
+        vehicleNumber={vehicleNumber}
         onUpdateResult={handleUpdateResult}
         onFinish={() => setStep('summary')}
         onBack={() => setStep('start')}
@@ -229,6 +328,8 @@ export default function HomePage() {
   return (
     <SummaryScreen
       results={results}
+      driverName={driverName}
+      vehicleNumber={vehicleNumber}
       onBack={() => setStep('inspection')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
