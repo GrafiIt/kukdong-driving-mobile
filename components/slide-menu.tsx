@@ -16,11 +16,24 @@ const LOGIN_URL = 'https://payment.1004.help/auth/login';
 export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [userLevel, setUserLevel] = useState<number | null>(null);
+  const [isLoadingLevel, setIsLoadingLevel] = useState(false);
 
-  // 메뉴 열릴 때 body 스크롤 잠금
+  // 메뉴 열릴 때 body 스크롤 잠금 + 사용자 등급 조회
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+
+      // 메뉴가 열릴 때마다 최신 등급을 가져옴
+      setIsLoadingLevel(true);
+      fetch('/api/v1/users/me')
+        .then((res) => {
+          if (!res.ok) throw new Error('unauthorized');
+          return res.json();
+        })
+        .then((data) => setUserLevel(data.user_level ?? null))
+        .catch(() => setUserLevel(null))
+        .finally(() => setIsLoadingLevel(false));
     } else {
       document.body.style.overflow = '';
     }
@@ -30,8 +43,16 @@ export function SlideMenu({ isOpen, onClose }: SlideMenuProps) {
   }, [isOpen]);
 
   const handleAdminClick = () => {
-    router.push('/admin');
-    onClose();
+    // 로딩 중이면 무시
+    if (isLoadingLevel) return;
+
+    // user_level 1 또는 2만 허용
+    if (userLevel === 1 || userLevel === 2) {
+      router.push('/admin');
+      onClose();
+    } else {
+      alert('관리자만 접근할 수 있습니다.');
+    }
   };
 
   const handleInstallClick = () => {
