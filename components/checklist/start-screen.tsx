@@ -10,13 +10,12 @@ import { SlideMenu } from '@/components/slide-menu'
 
 interface StartScreenProps {
   results: Record<string, InspectionResult>
+  driverName: string
+  vehicleNumber: string
   onStart: () => void
   onEdit: (inspectionId: string) => void
   isLoadingEdit: boolean
 }
-
-const DRIVER_NAME = '이윤상'
-const VEHICLE_NUMBER = '부산 99바 1234'
 
 function getInspectionDateTime(): string {
   const now = new Date()
@@ -44,7 +43,7 @@ function getCategoryBg(key: string) {
   return 'bg-gray-50'
 }
 
-export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }: StartScreenProps) {
+export default function StartScreen({ results, driverName, vehicleNumber, onStart, onEdit, isLoadingEdit }: StartScreenProps) {
   const [isTodayCompleted, setIsTodayCompleted] = useState(false)
   const [todayInspectionId, setTodayInspectionId] = useState<string | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -157,7 +156,7 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
               <UserCircle size={18} className="text-[#1a3a52]" />
             </div>
             <span className="text-sm text-gray-600 flex-1 font-medium">작업자명</span>
-            <span className="text-sm font-bold text-[#1a3a52]">{DRIVER_NAME}</span>
+            <span className="text-sm font-bold text-[#1a3a52]">{driverName}</span>
           </div>
           {/* 차량번호 */}
           <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
@@ -165,7 +164,7 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
               <Gauge size={18} className="text-[#1a3a52]" />
             </div>
             <span className="text-sm text-gray-600 flex-1 font-medium">차량번호</span>
-            <span className="text-sm font-bold text-[#1a3a52]">{VEHICLE_NUMBER}</span>
+            <span className="text-sm font-bold text-[#1a3a52]">{vehicleNumber}</span>
           </div>
           {/* 점검일시 */}
           <div className="flex items-center gap-3 px-5 py-4">

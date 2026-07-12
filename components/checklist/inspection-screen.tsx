@@ -17,6 +17,8 @@ import { compressImage, formatFileSize } from '@/lib/compress-image'
 
 interface InspectionScreenProps {
   results: Record<string, InspectionResult>
+  driverName: string
+  vehicleNumber: string
   onUpdateResult: (itemId: string, update: Partial<InspectionResult>) => void
   onFinish: () => void
   onBack: () => void
@@ -545,6 +547,8 @@ function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachMo
 // ── 메인 점검 화면 ─────────────────────────────────────────────
 export default function InspectionScreen({
   results,
+  driverName,
+  vehicleNumber,
   onUpdateResult,
   onFinish,
   onBack,
@@ -638,8 +642,13 @@ export default function InspectionScreen({
           />
         </Link>
         
-        {/* 중앙: 제목 */}
-        <h1 className="text-lg font-bold text-[#1a3a52] flex-1 text-center tracking-tight">점검 체크리스트</h1>
+        {/* 중앙: 제목 + 작업자/차량 정보 */}
+        <div className="flex-1 flex flex-col items-center">
+          <h1 className="text-lg font-bold text-[#1a3a52] text-center tracking-tight">점검 체크리스트</h1>
+          <p className="text-[11px] font-medium text-gray-500 text-center leading-tight mt-0.5">
+            {driverName} · {vehicleNumber}
+          </p>
+        </div>
         
         {/* 우측: 뒤로 가기 */}
         <button
