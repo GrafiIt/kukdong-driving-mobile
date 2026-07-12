@@ -109,7 +109,7 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
   }
 
   return (
-    <div className="w-full min-h-screen bg-white flex flex-col">
+    <div className="w-full min-h-screen bg-white flex flex-col" style={{ touchAction: 'pan-y' }}>
       {/* 상단 헤더 */}
       <header className="flex items-center px-5 pt-4 pb-4 bg-white gap-4 border-b border-gray-200">
         {/* 좌측: CI 로고 */}
@@ -148,7 +148,7 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
       </header>
 
       {/* 본문 */}
-      <main className="flex-1 px-4 pb-32 flex flex-col gap-3">
+      <main className="flex-1 px-4 pb-4 flex flex-col gap-3">
         {/* 정보 카드 */}
         <div className="bg-white rounded-none border border-gray-200 overflow-hidden">
           {/* 작업자명 */}
@@ -223,8 +223,8 @@ export default function StartScreen({ results, onStart, onEdit, isLoadingEdit }:
         </div>
       </main>
 
-      {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white border-t border-gray-200">
+      {/* 하단 버튼 - 콘텐츠 바로 아래 또는 화면 하단에 고정 */}
+      <div className="sticky bottom-0 mt-auto px-4 pb-6 pt-3 bg-white border-t border-gray-200">
         <button
           onClick={handleMainButtonClick}
           disabled={isLoadingEdit}
