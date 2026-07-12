@@ -2,10 +2,17 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, User, Mail, Phone, RotateCw, Home } from 'lucide-react'
+import { AlertCircle, User, Mail, Phone, RotateCw, Home, LogOut } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 
 export default function UnassignedPage() {
   const router = useRouter()
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.reload()
+  }
 
   return (
     <div className="w-full min-h-screen bg-white flex flex-col">
@@ -96,6 +103,13 @@ export default function UnassignedPage() {
         >
           <RotateCw size={20} />
           다시 시도
+        </button>
+        <button
+          onClick={handleLogout}
+          className="w-full h-12 bg-[#1a3a52] hover:bg-[#142e42] active:bg-[#0e2232] text-white text-base font-bold rounded-none transition-colors flex items-center justify-center gap-2"
+        >
+          <LogOut size={18} />
+          로그아웃
         </button>
         <button
           onClick={() => router.push('/')}
