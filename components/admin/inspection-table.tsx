@@ -154,7 +154,15 @@ export function InspectionTable() {
       return
     }
 
-    const headers = ['No.', '점검일시', '작업자명', '차량번호', '관리자 비고']
+    // 헤더: 고정 4개 + 모든 점검 항목 라벨 + 관리자 비고
+    const headers = [
+      'No.',
+      '점검일시',
+      '작업자명',
+      '차량번호',
+      ...ORDERED_ITEMS.map((item) => item.label),
+      '관리자 비고',
+    ]
 
     // CSV 셀 이스케이프 (쉼표/따옴표/줄바꿈 처리)
     const escapeCsv = (value: string | number | null | undefined) => {
@@ -162,13 +170,55 @@ export function InspectionTable() {
       return `"${str.replace(/"/g, '""')}"`
     }
 
-    const rows = data.map((row, index) => [
-      index + 1,
-      formatDateTime(row.inspected_at),
-      row.driver_name ?? '',
-      row.vehicle_number ?? '',
-      row.admin_note ?? '',
-    ])
+    const rows = data.map((row, index) => {
+      // 화면 렌더링과 동일하게 item_id → 기록 맵 구성
+      const itemMap = new Map<string, InspectionItemRow>()
+      ;(row.kukdong_driver_inspection_items ?? []).forEach((it) => {
+        itemMap.set(it.item_id, it)
+      })
+
+      // 각 점검 항목의 상태 텍스트 추출
+      const itemValues = ORDERED_ITEMS.map((item) => {
+        const it = itemMap.get(item.id)
+        const status = it?.status ?? 'pending'
+        const hasImages = (it?.image_urls?.length ?? 0) > 0
+
+        // 기록 없음 / 미입력
+        if (!it || status === 'pending') return '-'
+
+        // 서명 항목
+        if (item.type === 'signature') {
+          return hasImages ? '서명완료' : '-'
+        }
+
+        // 정상 계열
+        if (status === 'normal') {
+          const label = item.customLabels?.[0] ?? '정상'
+          return hasImages ? `${label}(사진)` : label
+        }
+
+        // 이상 계열
+        if (status === 'abnormal') {
+          const label = item.customLabels?.[1] ?? '이상'
+          const note = it.note?.trim()
+          const extras: string[] = []
+          if (note) extras.push(`사유: ${note}`)
+          if (hasImages) extras.push('사진')
+          return extras.length > 0 ? `${label}(${extras.join(', ')})` : label
+        }
+
+        return '-'
+      })
+
+      return [
+        index + 1,
+        formatDateTime(row.inspected_at),
+        row.driver_name ?? '',
+        row.vehicle_number ?? '',
+        ...itemValues,
+        row.admin_note ?? '',
+      ]
+    })
 
     const csvBody = [headers, ...rows]
       .map((cols) => cols.map(escapeCsv).join(','))
