@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import useSWR from 'swr'
-import { RefreshCw, Plus, Pencil, Trash2, X, Home } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { RefreshCw, Plus, Pencil, Trash2, X } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { DriverAssignModal } from '@/components/admin/driver-assign-modal'
 
@@ -37,7 +36,6 @@ async function fetchVehicles(): Promise<VehicleRow[]> {
 // 메인 컴포넌트
 // ─────────────────────────────────────────
 export function VehicleManagement() {
-  const router = useRouter()
   const { data, error, isLoading, mutate, isValidating } = useSWR(
     'admin-vehicles',
     fetchVehicles,
@@ -124,14 +122,6 @@ export function VehicleManagement() {
           >
             <RefreshCw size={16} className={isValidating ? 'animate-spin' : ''} />
             새로고침
-          </button>
-          <button
-            onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            title="홈으로 가기"
-          >
-            <Home size={16} />
-            홈
           </button>
           <button
             onClick={() => {
