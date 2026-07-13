@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Home } from 'lucide-react'
 import { AdminSidebar, type AdminMenuKey } from '@/components/admin/admin-sidebar'
 import { InspectionTable } from '@/components/admin/inspection-table'
 import { VehicleManagement } from '@/components/admin/vehicle-management'
@@ -62,6 +63,16 @@ export default function AdminPage() {
             />
           </Link>
           <h1 className="text-xl font-bold text-[#1a3a52] tracking-tight">관리자 페이지</h1>
+
+          {/* 우측 끝 전역 '홈' 버튼 */}
+          <Link
+            href="/"
+            className="ml-auto inline-flex flex-shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            title="홈으로 가기"
+          >
+            <Home size={16} />
+            홈
+          </Link>
         </header>
         
         {/* 콘텐츠 */}

@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import useSWR from 'swr'
-import { RefreshCw, ImageIcon, Search, Pencil, Home, MessageSquare, Trash2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { RefreshCw, ImageIcon, Search, Pencil, MessageSquare, Trash2, Download } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { CHECKLIST_ITEMS } from '@/lib/checklist-data'
 import { PhotoModal } from '@/components/admin/photo-modal'
@@ -50,6 +49,7 @@ function getDefaultDateRange(): { from: string; to: string } {
 async function fetchInspections(
   fromDate: string,
   toDate: string,
+  keyword: string,
 ): Promise<InspectionRow[]> {
   const supabase = createClient()
   // toDate는 당일 23:59:59까지 포함하기 위해 다음날 00:00:00 미만으로 처리
@@ -57,7 +57,7 @@ async function fetchInspections(
     new Date(new Date(toDate).getTime() + 24 * 60 * 60 * 1000),
   )
 
-  const { data, error } = await supabase
+  let query = supabase
     .schema('driver-checklist')
     .from('kukdong_driver_inspections')
     .select(
@@ -65,7 +65,16 @@ async function fetchInspections(
     )
     .gte('inspected_at', fromDate)
     .lt('inspected_at', toDateExclusive)
-    .order('inspected_at', { ascending: false })
+
+  // 작업자명 또는 차량번호 부분 일치 검색
+  const trimmedKeyword = keyword.trim()
+  if (trimmedKeyword !== '') {
+    query = query.or(
+      `driver_name.ilike.%${trimmedKeyword}%,vehicle_number.ilike.%${trimmedKeyword}%`,
+    )
+  }
+
+  const { data, error } = await query.order('inspected_at', { ascending: false })
 
   if (error) throw new Error(error.message)
   return (data ?? []) as InspectionRow[]
@@ -107,25 +116,26 @@ interface NoteModalState {
 // 메인 컴포넌트
 // ─────────────────────────────────────────
 export function InspectionTable() {
-  const router = useRouter()
   const defaults = getDefaultDateRange()
   const [fromDate, setFromDate] = useState(defaults.from)
   const [toDate, setToDate]     = useState(defaults.to)
-  // 실제 조회에 사용할 날짜 (검색 버튼 클릭 시 적용)
+  const [keyword, setKeyword]   = useState('')
+  // 실제 조회에 사용할 값 (검색 버튼 클릭 시 적용)
   const [appliedFrom, setAppliedFrom] = useState(defaults.from)
   const [appliedTo, setAppliedTo]     = useState(defaults.to)
+  const [appliedKeyword, setAppliedKeyword] = useState('')
 
   const [modal, setModal] = useState<ModalState | null>(null)
   const [noteModal, setNoteModal] = useState<NoteModalState | null>(null)
   const [editRow, setEditRow] = useState<InspectionRow | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // SWR key에 날짜를 포함시켜 날짜 변경 시 자동 refetch
-  const swrKey = `admin-inspections/${appliedFrom}/${appliedTo}`
+  // SWR key에 날짜/키워드를 포함시켜 값 변경 시 자동 refetch
+  const swrKey = `admin-inspections/${appliedFrom}/${appliedTo}/${appliedKeyword}`
 
   const fetcher = useCallback(
-    () => fetchInspections(appliedFrom, appliedTo),
-    [appliedFrom, appliedTo],
+    () => fetchInspections(appliedFrom, appliedTo, appliedKeyword),
+    [appliedFrom, appliedTo, appliedKeyword],
   )
 
   const { data, error, isLoading, mutate, isValidating } = useSWR(swrKey, fetcher)
@@ -134,6 +144,49 @@ export function InspectionTable() {
   const handleSearch = () => {
     setAppliedFrom(fromDate)
     setAppliedTo(toDate)
+    setAppliedKeyword(keyword)
+  }
+
+  // ── 엑셀(CSV) 다운로드 ──
+  const handleExportExcel = () => {
+    if (!data || data.length === 0) {
+      alert('다운로드할 데이터가 없습니다.')
+      return
+    }
+
+    const headers = ['No.', '점검일시', '작업자명', '차량번호', '관리자 비고']
+
+    // CSV 셀 이스케이프 (쉼표/따옴표/줄바꿈 처리)
+    const escapeCsv = (value: string | number | null | undefined) => {
+      const str = value === null || value === undefined ? '' : String(value)
+      return `"${str.replace(/"/g, '""')}"`
+    }
+
+    const rows = data.map((row, index) => [
+      index + 1,
+      formatDateTime(row.inspected_at),
+      row.driver_name ?? '',
+      row.vehicle_number ?? '',
+      row.admin_note ?? '',
+    ])
+
+    const csvBody = [headers, ...rows]
+      .map((cols) => cols.map(escapeCsv).join(','))
+      .join('\r\n')
+
+    // MS Excel 한글 깨짐 방지를 위해 UTF-8 BOM(\uFEFF)을 맨 앞에 추가
+    const blob = new Blob([`\uFEFF${csvBody}`], {
+      type: 'text/csv;charset=utf-8;',
+    })
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `일일점검_${appliedFrom}_${appliedTo}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   // 점검 기록 삭제 (자식 → 부모 순서)
@@ -191,12 +244,12 @@ export function InspectionTable() {
             새로고침
           </button>
           <button
-            onClick={() => router.push('/')}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            title="홈으로 가기"
+            onClick={handleExportExcel}
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 active:bg-emerald-800"
+            title="엑셀 다운로드"
           >
-            <Home size={16} />
-            홈
+            <Download size={16} />
+            엑셀 다운로드
           </button>
         </div>
       </div>
@@ -221,6 +274,23 @@ export function InspectionTable() {
             className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 transition-colors"
           />
         </div>
+        {/* 작업자명 / 차량번호 검색 */}
+        <input
+          type="text"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          onKeyDown={(e) => {
+            if (
+              e.key === 'Enter' &&
+              !e.nativeEvent.isComposing &&
+              e.keyCode !== 229
+            ) {
+              handleSearch()
+            }
+          }}
+          placeholder="작업자명 또는 차량번호 검색"
+          className="min-w-[200px] flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 transition-colors sm:flex-none"
+        />
         <button
           onClick={handleSearch}
           className="inline-flex items-center gap-2 rounded-lg bg-[#1e3a5f] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#162d4a] active:bg-[#0f2035]"
