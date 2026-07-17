@@ -21,6 +21,7 @@ export default function ChecklistPage() {
   // ── 사용자/차량 매칭 상태 ──
   const [driverName, setDriverName] = useState('')
   const [vehicleNumber, setVehicleNumber] = useState('')
+  const [userLevel, setUserLevel] = useState<number | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
 
   // ── 마운트 시 세션·권한·차량 매칭 검증 ──
@@ -53,6 +54,8 @@ export default function ChecklistPage() {
           // 등급 조회 실패는 일반 사용자로 간주
         }
 
+        if (!cancelled) setUserLevel(userLevel)
+
         // 3) 차량 매칭 조회 (driver_id 가 유저 id 또는 이메일과 일치)
         const orFilters = [`driver_id.eq.${user.id}`]
         if (user.email) orFilters.push(`driver_id.eq.${user.email}`)
@@ -74,7 +77,7 @@ export default function ChecklistPage() {
           '사용자'
 
         // ── 핵심 로직 분기 ──
-        if (userLevel === 1) {
+        if (userLevel === 1 || userLevel === 2) {
           // 관리자: 매칭 없어도 무조건 통과
           setDriverName(vehicle?.driver_name ?? fallbackName)
           setVehicleNumber('관리자')
@@ -115,6 +118,12 @@ export default function ChecklistPage() {
     },
     []
   )
+
+  // ── 수동으로 작업자/차량번호 변경 (관리자 대리 점검) ──
+  const handleVehicleChange = (dName: string, vNum: string) => {
+    setDriverName(dName)
+    setVehicleNumber(vNum)
+  }
 
   // ── 신규 점검 시작 ──
   const handleStart = useCallback(() => {
@@ -305,6 +314,8 @@ export default function ChecklistPage() {
         results={results}
         driverName={driverName}
         vehicleNumber={vehicleNumber}
+        userLevel={userLevel}
+        onVehicleChange={handleVehicleChange}
         onStart={handleStart}
         onEdit={handleEdit}
         isLoadingEdit={isLoadingEdit}
