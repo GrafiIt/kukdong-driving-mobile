@@ -113,7 +113,7 @@ export default function StartScreen({ results, driverName, vehicleNumber, onStar
       <header className="flex items-center px-5 pt-4 pb-4 bg-white gap-4 border-b border-gray-200">
         {/* 좌측: CI 로고 */}
         <Link
-          href="/"
+          href="/checklist"
           className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
           aria-label="홈으로 이동"
         >
