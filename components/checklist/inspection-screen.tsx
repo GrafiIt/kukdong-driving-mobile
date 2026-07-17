@@ -261,18 +261,13 @@ function AbnormalModal({ itemLabel, result, onSave, onCancel }: AbnormalModalPro
 }
 
 // ── 완료 판정 헬퍼 ─────────────────────────────────────────────
-// requiresPhoto 항목은 정상/이상 선택 + 사진 최소 1장이 모두 충족되어야 완료로 인정
+// 사진 첨부는 전 항목 선택사항 — 서명 제외 모든 항목은 status 선택만으로 완료 인정
 function isItemCompleted(item: ChecklistItem, result?: InspectionResult): boolean {
   // 서명 항목: 서명 이미지가 1장 이상 저장되어 있으면 완료
   if (item.type === 'signature') {
     return (result?.images?.length ?? 0) >= 1
   }
-  const statusDone = result?.status === 'normal' || result?.status === 'abnormal'
-  if (!statusDone) return false
-  if (item.requiresPhoto) {
-    return (result?.images?.length ?? 0) >= 1
-  }
-  return true
+  return result?.status === 'normal' || result?.status === 'abnormal'
 }
 
 // ── 서명 패드 (HTML5 Canvas) ───────────────────────────────────
@@ -790,8 +785,8 @@ export default function InspectionScreen({
                     <button
                       onClick={() => setPhotoModalItemId(item.id)}
                       className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 hover:bg-gray-50 transition-colors relative"
-                      aria-label={item.requiresPhoto ? '필수 사진 첨부' : '사진 첨부 (선택)'}
-                      title={item.requiresPhoto ? '사진 첨부 (필수)' : '사진 첨부 (선택)'}
+                      aria-label="사진 첨부 (선택)"
+                      title="사진 첨부 (선택)"
                     >
                       <Camera
                         size={20}
@@ -801,9 +796,6 @@ export default function InspectionScreen({
                             : 'text-gray-300'
                         }
                       />
-                      {item.requiresPhoto && (result?.images?.length ?? 0) === 0 && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
-                      )}
                     </button>
                   )}
                 </div>
@@ -924,7 +916,7 @@ export default function InspectionScreen({
           result={results[photoModalItem.id]}
           onSave={handlePhotoSave}
           onCancel={() => setPhotoModalItemId(null)}
-          isOptional={!photoModalItem.requiresPhoto}
+          isOptional={true}
         />
       )}
     </div>
