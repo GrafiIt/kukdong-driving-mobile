@@ -25,6 +25,16 @@ export async function middleware(request: NextRequest) {
   }
   // ─────────────────────────────────────────────────────────
 
+  // ── 퍼블릭 라우트(로그인 불필요) 우회 처리 ─────────────────
+  // 루트(/)는 온보딩용 퍼블릭 랜딩 페이지, /install 은 PWA 설치 안내 페이지로
+  // 미인증 사용자도 접근할 수 있어야 하므로 권한 검증을 건너뛴다.
+  const currentPathname = request.nextUrl.pathname
+  const isPublicRoute = currentPathname === "/" || currentPathname.startsWith("/install")
+  if (isPublicRoute) {
+    return NextResponse.next()
+  }
+  // ─────────────────────────────────────────────────────────
+
   // 현재 접속 도메인 기반 쿠키 도메인 분기 (.1004.help 또는 localhost 등)
   const hostname = request.headers.get("host")?.split(":")[0] ?? null
   const cookieDomain = getCookieDomain(hostname)
@@ -176,7 +186,7 @@ export const config = {
      * 아래 경로를 제외한 모든 요청에 매칭:
      * - api (API 라우트) → 단, `/api/v1/users/me` 는 예외적으로 미들웨어를 태워
      *   X-User-Level 헤더를 주입받아야 하므로 매칭 대상에 포함시킨다.
-     *   (부정 룩어헤드 `api(?!/v1/users/me)`: api 로 시작하되 /v1/users/me 가
+     *   (부��� 룩어헤드 `api(?!/v1/users/me)`: api 로 시작하되 /v1/users/me 가
      *    뒤따르지 않는 경로만 제외 → 결제 허브 등 외부 API 충돌 방지)
      * - _next/static (정적 파일)
      * - _next/image (이미지 최적화 파일)
