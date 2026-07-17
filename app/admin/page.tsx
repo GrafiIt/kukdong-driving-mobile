@@ -49,7 +49,7 @@ export default function AdminPage() {
         {/* 헤더 */}
         <header className="flex items-center px-8 pt-6 pb-4 border-b border-gray-200 flex-shrink-0 gap-4">
           <Link
-            href="/"
+            href="/checklist"
             className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
             aria-label="홈으로 이동"
           >
@@ -66,7 +66,7 @@ export default function AdminPage() {
 
           {/* 우측 끝 전역 '홈' 버튼 */}
           <Link
-            href="/"
+            href="/checklist"
             className="ml-auto inline-flex flex-shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
             title="홈으로 가기"
           >

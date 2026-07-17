@@ -54,7 +54,7 @@ export default function SummaryScreen({
       <header className="flex items-center gap-3 px-4 pt-4 pb-4 border-b border-gray-200">
         {/* 좌측: CI 로고 */}
         <Link
-          href="/"
+          href="/checklist"
           className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
           aria-label="홈으로 이동"
         >
