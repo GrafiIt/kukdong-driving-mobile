@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+// 내부 프로젝트 경로(@/lib/...) 대신 공식 라이브러리를 직접 호출합니다.
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export default function TestDbPage() {
   const [queryResult, setQueryResult] = useState<QueryResult>({})
   const [isLoading, setIsLoading] = useState(false)
 
-  // Check environment variables on mount
+  // 컴포넌트 마운트 시 환경 변수 체크
   useEffect(() => {
     const url = !!process.env.NEXT_PUBLIC_SUPABASE_URL
     const anonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -37,7 +38,15 @@ export default function TestDbPage() {
     setQueryResult({ loading: true })
 
     try {
-      const supabase = createClient()
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      if (!url || !key) {
+        throw new Error('환경변수(URL 또는 ANON_KEY)가 설정되지 않았습니다.')
+      }
+
+      // 페이지 내부에서 클라이언트를 직접 생성하여 외부 파일 의존성을 완전히 없앱니다.
+      const supabase = createClient(url, key)
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
@@ -57,7 +66,7 @@ export default function TestDbPage() {
       const error = err as Error
       setQueryResult({
         error: {
-          message: error.message || 'Unknown error occurred',
+          message: error.message || '알 수 없는 오류가 발생했습니다.',
           code: 'EXCEPTION',
         },
       })
@@ -71,15 +80,15 @@ export default function TestDbPage() {
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-white">Supabase �곌껐 �뚯뒪��</h1>
-          <p className="text-slate-400">�섍꼍蹂��� �곹깭 諛� �곗씠�곕쿋�댁뒪 �곌껐�깆쓣 �뺤씤�⑸땲��</p>
+          <h1 className="text-4xl font-bold text-white">Supabase 연결 테스트</h1>
+          <p className="text-slate-400">환경변수 상태 및 데이터베이스 연결성을 확인합니다</p>
         </div>
 
         {/* Environment Status Card */}
         <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
           <div className="flex flex-col space-y-1.5 p-6">
-            <h3 className="text-lg font-semibold text-white">�섍꼍蹂��� �곹깭</h3>
-            <p className="text-sm text-slate-400">�꾩닔 �섍꼍蹂��� �뺤씤</p>
+            <h3 className="text-lg font-semibold text-white">환경변수 상태</h3>
+            <p className="text-sm text-slate-400">필수 환경변수 확인</p>
           </div>
           <div className="p-6 pt-0 space-y-3">
             <div className="flex items-center justify-between rounded-lg bg-slate-700/50 p-4">
@@ -90,7 +99,7 @@ export default function TestDbPage() {
                     }`}
                 />
                 <span className={envStatus.url ? 'text-green-400' : 'text-red-400'}>
-                  {envStatus.url ? '�� �ㅼ젙��' : '�� 誘몄꽕��'}
+                  {envStatus.url ? '✓ 설정됨' : '✗ 미설정'}
                 </span>
               </div>
             </div>
@@ -103,7 +112,7 @@ export default function TestDbPage() {
                     }`}
                 />
                 <span className={envStatus.anonKey ? 'text-green-400' : 'text-red-400'}>
-                  {envStatus.anonKey ? '�� �ㅼ젙��' : '�� 誘몄꽕��'}
+                  {envStatus.anonKey ? '✓ 설정됨' : '✗ 미설정'}
                 </span>
               </div>
             </div>
@@ -113,14 +122,14 @@ export default function TestDbPage() {
         {/* Query Tester Card */}
         <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
           <div className="flex flex-col space-y-1.5 p-6">
-            <h3 className="text-lg font-semibold text-white">�곗씠�곕쿋�댁뒪 荑쇰━ �뚯뒪��</h3>
-            <p className="text-sm text-slate-400">�뚯씠釉붿뿉�� 理쒕� 3媛� �됱쓣 議고쉶�⑸땲��</p>
+            <h3 className="text-lg font-semibold text-white">데이터베이스 쿼리 테스트</h3>
+            <p className="text-sm text-slate-400">테이블에서 최대 3개 행을 조회합니다</p>
           </div>
           <div className="p-6 pt-0 space-y-4">
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="�뚯씠釉붾챸"
+                placeholder="테이블명 입력 (예: users)"
                 value={tableName}
                 onChange={(e) => setTableName(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-slate-600 bg-slate-700 px-3 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
@@ -130,14 +139,14 @@ export default function TestDbPage() {
                 disabled={isLoading || !envStatus.url || !envStatus.anonKey}
                 className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:pointer-events-none disabled:opacity-50"
               >
-                {isLoading ? '濡쒕뵫 以�...' : '�뚯뒪��'}
+                {isLoading ? '로딩 중...' : '테스트'}
               </button>
             </div>
 
             {/* Results */}
             {queryResult.data !== undefined && (
               <div className="rounded-lg bg-slate-700/50 p-4">
-                <p className="mb-2 text-sm font-semibold text-green-400">�� �깃났</p>
+                <p className="mb-2 text-sm font-semibold text-green-400">✓ 성공</p>
                 <pre className="overflow-x-auto rounded bg-slate-900 p-3 text-sm text-slate-200">
                   {JSON.stringify(queryResult.data, null, 2)}
                 </pre>
@@ -146,7 +155,7 @@ export default function TestDbPage() {
 
             {queryResult.error && (
               <div className="rounded-lg border-2 border-red-500/50 bg-red-900/20 p-4">
-                <p className="mb-3 font-semibold text-red-400">�� �ㅻ쪟 諛쒖깮</p>
+                <p className="mb-3 font-semibold text-red-400">✗ 오류 발생</p>
                 <div className="space-y-2 text-sm">
                   <div>
                     <span className="text-slate-400">Message: </span>
@@ -162,7 +171,7 @@ export default function TestDbPage() {
 
             {queryResult.loading && !queryResult.data && !queryResult.error && (
               <div className="rounded-lg bg-slate-700/50 p-4 text-center">
-                <p className="text-slate-400">議고쉶 以�...</p>
+                <p className="text-slate-400">조회 중...</p>
               </div>
             )}
           </div>
@@ -171,17 +180,17 @@ export default function TestDbPage() {
         {/* Help Card */}
         <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
           <div className="flex flex-col space-y-1.5 p-6">
-            <h3 className="text-lg font-semibold text-white">臾몄젣 �닿껐</h3>
+            <h3 className="text-lg font-semibold text-white">문제 해결</h3>
           </div>
           <div className="p-6 pt-0 space-y-2 text-sm text-slate-400">
             <p>
-              <span className="font-semibold text-slate-300">401 �먮윭:</span> Anon Key媛� 留뚮즺�섏뿀嫄곕굹 �섎せ�섏뿀�듬땲��.
+              <span className="font-semibold text-slate-300">401 에러:</span> Anon Key가 만료되었거나 잘못되었습니다.
             </p>
             <p>
-              <span className="font-semibold text-slate-300">PGRST116:</span> �뚯씠釉붿씠 議댁옱�섏� �딄굅�� 沅뚰븳�� �놁뒿�덈떎.
+              <span className="font-semibold text-slate-300">PGRST116:</span> 테이블이 존재하지 않거나 권한이 없습니다. (RLS 정책 확인)
             </p>
             <p>
-              <span className="font-semibold text-slate-300">�섍꼍蹂��� 誘몄꽕��:</span> .env �뚯씪�� �섍꼍蹂��섍� �뺤긽�곸쑝濡� 二쇱엯�섏뿀�붿� �뺤씤�섏꽭��.
+              <span className="font-semibold text-slate-300">환경변수 미설정:</span> Vercel 설정 또는 .env 파일에 환경변수가 정상적으로 주입되었는지 확인하세요.
             </p>
           </div>
         </div>
