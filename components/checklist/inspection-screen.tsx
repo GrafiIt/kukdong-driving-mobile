@@ -424,9 +424,10 @@ interface PhotoAttachModalProps {
   result: InspectionResult
   onSave: (images: CompressedImage[]) => void
   onCancel: () => void
+  isOptional?: boolean
 }
 
-function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachModalProps) {
+function PhotoAttachModal({ itemLabel, result, onSave, onCancel, isOptional }: PhotoAttachModalProps) {
   const [images, setImages] = useState<CompressedImage[]>(result.images ?? [])
   const [isCompressing, setIsCompressing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -455,7 +456,7 @@ function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachMo
     setImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const canSave = images.length >= 1
+  const canSave = isOptional ? true : images.length >= 1
 
   return (
     <div
@@ -467,7 +468,9 @@ function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachMo
         <div className="flex items-center justify-between mb-4 border-b border-gray-200 pb-3">
           <div className="flex items-center gap-2">
             <Camera size={20} className="text-[#1a3a52]" />
-            <span className="font-bold text-[#1a3a52] text-sm">필수 사진 첨부</span>
+            <span className="font-bold text-[#1a3a52] text-sm">
+              {isOptional ? '사진 첨부 (선택)' : '필수 사진 첨부'}
+            </span>
           </div>
           <button
             onClick={onCancel}
@@ -481,7 +484,10 @@ function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachMo
         <p className="text-sm font-semibold text-gray-800 mb-4 leading-snug">{itemLabel}</p>
 
         <label className="block text-xs font-semibold text-gray-600 mb-2">
-          사진 첨부 <span className="text-gray-400 font-normal">(최소 1장, 최대 2장 · 자동 압축)</span>
+          사진 첨부{' '}
+          <span className="text-gray-400 font-normal">
+            {isOptional ? '(최대 2장 · 선택사항)' : '(최소 1장, 최대 2장 · 필수)'}
+          </span>
         </label>
         <div className="flex gap-3 mb-5">
           {images.map((img, idx) => (
@@ -525,7 +531,7 @@ function PhotoAttachModal({ itemLabel, result, onSave, onCancel }: PhotoAttachMo
           className="hidden"
         />
 
-        {!canSave && (
+        {!isOptional && !canSave && (
           <p className="text-xs text-red-600 mb-2">사진을 최소 1장 이상 첨부해야 합니다.</p>
         )}
 
@@ -779,13 +785,13 @@ export default function InspectionScreen({
                     {item.label}
                   </p>
 
-                  {/* 필수 사진 항목: 우측 끝 사진기 아이콘 (미첨부=회색, 1장 이상 첨부=초록) */}
-                  {item.requiresPhoto && (
+                  {/* binary / requiresPhoto 항목: 우측 끝 사진기 아이콘 (미첨부=회색, 1장 이상 첨부=초록) */}
+                  {(item.type === 'binary' || item.requiresPhoto) && (
                     <button
                       onClick={() => setPhotoModalItemId(item.id)}
                       className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 hover:bg-gray-50 transition-colors relative"
-                      aria-label="필수 사진 첨부"
-                      title="사진 첨부 (필수)"
+                      aria-label={item.requiresPhoto ? '필수 사진 첨부' : '사진 첨부 (선택)'}
+                      title={item.requiresPhoto ? '사진 첨부 (필수)' : '사진 첨부 (선택)'}
                     >
                       <Camera
                         size={20}
@@ -795,7 +801,7 @@ export default function InspectionScreen({
                             : 'text-gray-300'
                         }
                       />
-                      {(result?.images?.length ?? 0) === 0 && (
+                      {item.requiresPhoto && (result?.images?.length ?? 0) === 0 && (
                         <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
                       )}
                     </button>
@@ -918,6 +924,7 @@ export default function InspectionScreen({
           result={results[photoModalItem.id]}
           onSave={handlePhotoSave}
           onCancel={() => setPhotoModalItemId(null)}
+          isOptional={!photoModalItem.requiresPhoto}
         />
       )}
     </div>
