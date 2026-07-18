@@ -61,6 +61,10 @@ export default function StartScreen({ results, driverName, vehicleNumber, userLe
   // 오늘 점검 완료 여부 조회
   useEffect(() => {
     const checkTodayInspection = async () => {
+      // 이전 차량의 잔상이 남지 않도록 먼저 초기화
+      setIsTodayCompleted(false)
+      setTodayInspectionId(null)
+
       try {
         const supabase = createClient()
         const now = new Date()
@@ -71,6 +75,7 @@ export default function StartScreen({ results, driverName, vehicleNumber, userLe
           .schema('driver-checklist')
           .from('kukdong_driver_inspections')
           .select('id')
+          .eq('vehicle_number', vehicleNumber)
           .gte('inspected_at', todayStart.toISOString())
           .lte('inspected_at', todayEnd.toISOString())
           .order('inspected_at', { ascending: false })
@@ -79,14 +84,19 @@ export default function StartScreen({ results, driverName, vehicleNumber, userLe
         if (!error && data && data.length > 0) {
           setIsTodayCompleted(true)
           setTodayInspectionId(data[0].id)
+        } else {
+          setIsTodayCompleted(false)
+          setTodayInspectionId(null)
         }
       } catch {
         // 조회 실패 시 기본값(미완료)으로 유지
+        setIsTodayCompleted(false)
+        setTodayInspectionId(null)
       }
     }
 
     checkTodayInspection()
-  }, [])
+  }, [vehicleNumber])
 
   // 점검 시작 / 수정 분기 핸들러
   const handleMainButtonClick = () => {
