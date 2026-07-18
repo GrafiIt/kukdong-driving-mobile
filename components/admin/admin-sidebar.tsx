@@ -1,8 +1,8 @@
 'use client'
 
-import { Car, ClipboardCheck, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
+import { Car, ClipboardCheck, PanelLeftClose, PanelLeftOpen, Shield, type LucideIcon } from 'lucide-react'
 
-export type AdminMenuKey = 'checklist' | 'vehicles'
+export type AdminMenuKey = 'checklist' | 'vehicles' | 'permissions'
 
 interface AdminMenuItem {
   key: AdminMenuKey
@@ -14,6 +14,7 @@ interface AdminMenuItem {
 const MENU_ITEMS: AdminMenuItem[] = [
   { key: 'checklist', label: '일일점검 체크리스트', icon: ClipboardCheck },
   { key: 'vehicles', label: '차량 및 기사 관리', icon: Car },
+  { key: 'permissions', label: '권한 관리', icon: Shield },
 ]
 
 interface AdminSidebarProps {
