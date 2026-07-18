@@ -74,11 +74,18 @@ export default function AdminPage() {
             홈
           </Link>
         </header>
-        
+
         {/* 콘텐츠 */}
         <div className="flex-1 overflow-y-auto p-8">
           {activeMenu === 'checklist' && <InspectionTable />}
           {activeMenu === 'vehicles' && <VehicleManagement />}
+          {activeMenu === 'permissions' && (
+            <iframe
+              src="https://payment.1004.help/dashboard/members"
+              className="w-full h-[calc(100vh-160px)] rounded-xl border border-slate-200 bg-white"
+              title="권한 관리"
+            />
+          )}
         </div>
       </main>
     </div>
